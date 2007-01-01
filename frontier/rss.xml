@@ -1,72 +1,234 @@
+<?xml-stylesheet type="text/xsl" href="rss.xsl"?>
 <rss version="2.0">	
 <channel>
 
 <title>Lutz Roeder</title>
 <link>http://www.aisto.com/roeder/frontier</link>
-<copyright>Copyright (C) 2003-2005 Lutz Roeder</copyright>
+<copyright>Copyright (C) 2003-2007 Lutz Roeder</copyright>
+
+<item>
+<title>.NET Reflector add-in tutorial</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=61</link> 
+<pubDate>Sun, 26 Aug 2007</pubDate>
+<description>
+Jason Haley has written a &lt;a href=&quot;http://jasonhaley.com/blog/archive/2007/08/25/140286.aspx&quot; target=&quot;_blank"&gt;tutorial&lt;/a&gt; on creating Reflector add-ins.
+</description>
+</item>
+
+
+<item>
+<title>Reflexil add-in for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=60</link> 
+<pubDate>Fri, 24 Aug 2007</pubDate>
+<description>
+Sebastien Lebreton has created an &lt;a href=&quot;http://sourceforge.net/projects/reflexil/&quot; target=&quot;_blank"&gt;add-in&lt;/a&gt; to manipulate the IL of assemblies.
+</description>
+</item>
+
+<item>
+<title>PowerShell add-in for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=57</link> 
+<pubDate>Wed, 30 May 2007</pubDate>
+<description>
+Daniel Cazzulino has created a PowerShell language &lt;a href=&quot;http://www.codeplex.com/reflectoraddins/Wiki/View.aspx?title=PowerShellLanguage&quot; target=&quot;_blank"&gt;add-in&lt;/a&gt; for .NET Reflector.
+</description>
+</item>
+
+<item>
+<title>Silverlight Browser add-in for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=56</link> 
+<pubDate>Sat, 19 May 2007</pubDate>
+<description>
+Ernie Booth has created a Silverlight browser &lt;a href=&quot;http://blogs.msdn.com/ebooth/archive/2007/05/19/view-source-reflector-tool-for-net-silverlight-sites.aspx&quot; target=&quot;_blank"&gt;add-in&lt;/a&gt; for .NET Reflector.
+</description>
+</item>
+
+<item>
+<title>Monotone for Silverlight</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=55</link> 
+<pubDate>Mon, 30 April 2007</pubDate>
+<description>
+&lt;a href=&quot;http://www.aisto.com/roeder/silverlight&quot;&gt;Monotone&lt;/a&gt; for Silverlight 1.1 Alpha with source code.
+</description>
+</item>
+
+<item>
+<title>Code Review add-in for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=54</link> 
+<pubDate>Sat, 24 Feburary 2007</pubDate>
+<description>
+Jonathan de Halleux has released a &lt;a href=&quot;http://blog.dotnetwiki.org/ReflectorReviewALightweightCodeAnnotationTool.aspx&quot; target=&quot;_blank"&gt;review&lt;/a&gt; add-in for .NET Reflector.
+</description>
+</item>
+
+<item>
+<title>.NET Reflector 5.0</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=53</link> 
+<pubDate>Tue, 20 Feburary 2007</pubDate>
+<description>
+&lt;a href=&quot;http://www.aisto.com/roeder/dotnet&quot; target=&quot;_blank"&gt;Reflector&lt;/a&gt; 5.0 is now availabe. &lt;a href=&quot;http://www.codeplex.com/reflectoraddins&quot; target=&quot;_blank"&gt;Add-Ins&lt;/a&gt; list moved to CodePlex.
+</description>
+</item>
+
+<item>
+<title>BAML Viewer add-in for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=51</link> 
+<pubDate>Thu, 25 January 2007</pubDate>
+<description>
+Load &lt;a href=&quot;http://www.codeplex.com/reflectoraddins&quot; target=&quot;_blank"&gt;BAML&lt;/a&gt; and view XAML syntax.
+</description>
+</item>
+
+<item>
+<title>TestDriven.NET integration for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=49</link> 
+<pubDate>Mon, 30 October 2006</pubDate>
+<description>
+Jamie Cansdale added Reflector integration to &lt;a href=&quot;http://weblogs.asp.net/nunitaddin/archive/2006/10/30/TestDriven.NET-2.0.aspx&quot; target=&quot;_blank"&gt;TestDriven.net&lt;/a&gt;.
+</description>
+</item>
+
+<item>
+<title>Hawkeye integration for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=47</link> 
+<pubDate>Mon, 12 June 2006</pubDate>
+<description>
+Corneliu Tusnea's &lt;a href=&quot;http://www.acorns.com.au/hawkeye&quot; target=&quot;_blank"&gt;Hawkeye&lt;/a&gt; tool now supports Reflector navigation.
+</description>
+</item>
+
+<item>
+<title>BizTalk add-in for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=46</link> 
+<pubDate>Fri, 9 June 2006</pubDate>
+<description>
+Gilles Zunino has created a BizTalk &lt;a href=&quot;http://blogs.msdn.com/gzunino/archive/2006/06/09/623391.aspx&quot; target=&quot;_blank"&gt;add-in&lt;/a&gt; for .NET Reflector.
+</description>
+</item>
+
+<item>
+<title>Deblector add-in for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=45</link> 
+<pubDate>Mon, 1 May 2006</pubDate>
+<description>
+Felice Pollano has created a debugging &lt;a href=&quot;http://www.felicepollano.com/category/7.aspx&quot; target=&quot;_blank"&gt;add-in&lt;/a&gt; for Reflector.
+</description>
+</item>
+
+<item>
+<title>Doubler add-in for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=44</link> 
+<pubDate>Sun, 16 April 2006</pubDate>
+<description>
+Jay Flowers published the &lt;a href=&quot;http://jayflowers.com/doku/doku.php?id=doubler&quot; target=&quot;_blank"&gt;Doubler&lt;/a&gt; code generator add-in for unit tests.
+</description>
+</item>
+
+<item>
+<title>PDB support for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=43</link> 
+<pubDate>Mon, 27 March 2006</pubDate>
+<description>
+Reading local variable names from PDB files. Enable in options dialog.
+</description>
+</item>
+
+<item>
+<title>Assembly list support in .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=42</link> 
+<pubDate>Mon, 6 March 2006</pubDate>
+<description>
+Create and switch multiple lists of assemblies. Go to File menu and Open List.
+</description>
+</item>
+
+<item>
+<title>Code Search add-in for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=40</link> 
+<pubDate>Thu, 15 December 2005</pubDate>
+<description>
+Herve Chapalain has created a &lt;a href=&quot;http://www.gotdotnet.com/workspaces/workspace.aspx?id=884b469a-4b88-4b20-8747-b3ff6bb13a49&quot; target=&quot;_blank"&gt;CodeSearch&lt;/a&gt; add-in for .NET Reflector.
+</description>
+</item>
+
+<item>
+<title>C++/CLI support for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=39</link> 
+<pubDate>Tue, 22 November 2005</pubDate>
+<description>
+Dean Wills and Jason Shirk have created a &lt;a href=&quot;http://www.sandpapersoftware.com/reflector.html&quot; target=&quot;_blank"&gt;C++/CLI&lt;/a&gt; add-in.
+</description>
+</item>
+
+<item>
+<title>Microsoft Expression "Sparkle"</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=37</link> 
+<pubDate>Wed, 14 September 2005</pubDate>
+<description>
+&lt;a href=&quot;http://www.microsoft.com/expression&quot; target=&quot;_blank"&gt;Sparkle&lt;/a&gt; goes official.
+</description>
+</item>
+
+<item>
+<title>Boo support for .NET Reflector</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=34</link> 
+<pubDate>Tue, 9 August 2005</pubDate>
+<description>
+Ayende Rahien has created a Boo language add-in.
+</description>
+</item>
 
 <item>
 <title>SQL 2005 Browser add-in for .NET Reflector</title>
 <link>http://www.aisto.com/roeder/frontier?permalink=33</link> 
 <pubDate>Fri, 14 January 2005</pubDate>
 <description>
-Denis Bauer created a SQL 2005 Browser add-in which is available <a href="http://www.denisbauer.com/NETTools/SQL2005Browser.aspx" target='_blank'>here</a>.
+Denis Bauer published a &lt;a href=&quot;http://www.denisbauer.com/NETTools/SQL2005Browser.aspx&quot; target=&quot;_blank"&gt;SQL2005Browser&lt;/a&gt; add-in for .NET Reflector.
 </description>
 </item>
 
 <item>
-<title>CodeMetrics add-in for .NET Reflector</title>
+<title>Code Metrics add-in for .NET Reflector</title>
 <link>http://www.aisto.com/roeder/frontier?permalink=32</link> 
 <pubDate>Tue, 23 November 2004</pubDate>
 <description>
-Jonathan de Halleux <a href="http://blog.dotnetwiki.org/archive/2004/11/23/1281.aspx" target='_blank'>released</a> and add-in to compute design code metrics.
+Jonathan de Halleux created an published a &lt;a href=&quot;http://blog.dotnetwiki.org&quot; target=&quot;_blank"&gt;CodeMetrics&lt;/a&gt; add-in for Reflector.
+</description>
+</item>
+
+<item>
+<title>.NET Documentor</title>
+<link>http://www.aisto.com/roeder/frontier?permalink=30</link> 
+<pubDate>Tue, 16 November 2003</pubDate>
+<description>
+New download location for &lt;a href=&quot;http://www.aisto.com/roeder/dotnet/Download.aspx?File=Documentor&quot; target=&quot;_blank"&gt;Documentor&lt;/a&gt;. &lt;a href=&quot;http://www.paraesthesia.com/blog/comments.php?id=701_0_1_0_C&quot; target=&quot;_blank"&gt;Travis&lt;/a&gt; Illig will provide future updates.
 </description>
 </item>
 
 <item>
 <title>Diff add-in for .NET Reflector</title>
-<link>http://www.aisto.com/roeder/frontier?permalink=31</link> 
+<link>http://www.aisto.com/roeder/frontier?permalink=29</link> 
 <pubDate>Thu, 4 November 2004</pubDate>
 <description>
-Sean Hederman has written a diff add-in which is available <a href="http://www.codingsanity.com/diff.htm" target='_blank'>here</a>.
-</description>
-</item>
-
-<item>
-<title>64-bit support for .NET Reflector</title>
-<link>http://www.aisto.com/roeder/frontier?permalink=30</link> 
-<pubDate>Mon, 1 November 2004</pubDate>
-<description>
-Reflector.exe now runs on the 64-bit version of the .NET Framework.
+Sean Hederman has written a &lt;a href=&quot;http://www.codingsanity.com/diff.htm&quot; target=&quot;_blank"&gt;Diff&lt;/a&gt; add-in for .NET Reflector.
 </description>
 </item>
 
 <item>
 <title>Chrome support for .NET Reflector</title>
-<link>http://www.aisto.com/roeder/frontier?permalink=29</link> 
+<link>http://www.aisto.com/roeder/frontier?permalink=28</link> 
 <pubDate>Mon, 11 October 2004</pubDate>
 <description>
-Marc Hoffman has created a Chrome language add-in which is available <a href="http://www.remobjects.com/freedownloads.asp?id=57039A86-4B91-40CE-B1FA-A6170083C14C" target='_blank'>here</a>.
+Marc Hoffman has created a Chrome language add-in.
 </description>
 </item>
 
 <item>
 <title>C++ support for .NET Reflector</title>
-<link>http://www.aisto.com/roeder/frontier?permalink=28</link> 
+<link>http://www.aisto.com/roeder/frontier?permalink=27</link> 
 <pubDate>Fri, 3 September 2004</pubDate>
 <description>
-Jamie Cansdale has created a C++ language add-in which is available <a href="http://www.testdriven.net/reflector" target='_blank'>here</a>.
-</description>
-</item>
-
-<item>
-<title>Reflector Tips</title>
-<link>http://www.aisto.com/roeder/frontier?permalink=27</link> 
-<pubDate>Sat, 24 July 2004</pubDate>
-<description>
-1. To search for members press F3 and click the icon in the top right corner.<br/>
-2. IL can be selected via the language picker. Ctrl-D is still available.<br/>
-3. Putting quotes around a word when searching enables word matching.<br/>
+Jamie Cansdale has created a C++ language add-in.
 </description>
 </item>
 
@@ -75,7 +237,7 @@ Jamie Cansdale has created a C++ language add-in which is available <a href="htt
 <link>http://www.aisto.com/roeder/frontier?permalink=26</link> 
 <pubDate>Fri, 16 July 2004</pubDate>
 <description>
-A list of Reflector add-ins can be found <a href="http://csharp21.tripod.com/ReflectorAddIns" target='_blank'>here</a>.
+A website listing .NET Reflector &lt;a href=&quot;http://www.codeplex.com/reflectoraddins&quot; target=&quot;_blank"&gt;add-ins&lt;/a&gt;.
 </description>
 </item>
 
@@ -84,17 +246,7 @@ A list of Reflector add-ins can be found <a href="http://csharp21.tripod.com/Ref
 <link>http://www.aisto.com/roeder/frontier?permalink=22</link> 
 <pubDate>Sat, 1 May 2004</pubDate>
 <description>
-Reflector 4.0 is now available <a href='http://www.aisto.com/roeder/dotnet' target='_blank'>here</a>.
-The Reflector SDK is now maintained <a href="http://www.gotdotnet.com/workspaces/workspace.aspx?id=0f5846c3-c7aa-4879-8043-e0f4fc233ade" target='_blank'>here</a>.
-</description>
-</item>
-
-<item>
-<title>Demeanor</title>
-<link>http://www.aisto.com/roeder/frontier?permalink=19</link> 
-<pubDate>Sun, 25 January 2004</pubDate>
-<description>
-Reflector is now obfuscated using Brent Rector's Demeanor.
+&lt;a href=&quot;http://www.aisto.com/roeder/dotnet&quot; target=&quot;_blank"&gt;Reflector&lt;/a&gt; 4.0 is now available.
 </description>
 </item>
 
@@ -103,7 +255,7 @@ Reflector is now obfuscated using Brent Rector's Demeanor.
 <link>http://www.aisto.com/roeder/frontier?permalink=17</link> 
 <pubDate>Tue, 25 November 2003</pubDate>
 <description>
-Mobile version of Digger on 170 x 200 pixels. Download <a href='http://www.aisto.com/roeder/dotnet' target='_blank'>here</a>.
+Mobile phone version of &lt;a href=&quot;http://www.aisto.com/roeder/dotnet/digger.cab&quot; target=&quot;_blank"&gt;Digger&lt;/a&gt; with &lt;a href=&quot;http://www.aisto.com/roeder/dotnet/Download.aspx?File=Digger&quot; target=&quot;_blank"&gt;source code&lt;/a&gt;.
 </description>
 </item>
 
@@ -112,7 +264,7 @@ Mobile version of Digger on 170 x 200 pixels. Download <a href='http://www.aisto
 <link>http://www.aisto.com/roeder/frontier?permalink=15</link> 
 <pubDate>Thu, 2 October 2003</pubDate>
 <description>
-Switched to an SDI interface and added browsing support. Download <a href='http://www.aisto.com/roeder/dotnet' target='_blank'>here</a>.
+A new user interface for &lt;a href=&quot;http://www.aisto.com/roeder/dotnet&quot; target=&quot;_blank"&gt;Resourcer&lt;/a&gt;. Also added browsing support.
 </description>
 </item>
 
@@ -121,7 +273,7 @@ Switched to an SDI interface and added browsing support. Download <a href='http:
 <link>http://www.aisto.com/roeder/frontier?permalink=8</link> 
 <pubDate>Thu, 17 July 2003</pubDate>
 <description>
-Uploaded some WYSIWYG HTML editor code to a GotDotNet <a href="http://www.gotdotnet.com/Workspaces/Workspace.aspx?id=ee974084-d5c2-44d5-a11b-b2efb96074f8" target='_blank'>workspace</a>.
+Uploaded a WYSIWYG HTML editor called &lt;a href=&quot;http://www.aisto.com/roeder/dotnet&quot; target=&quot;_blank"&gt;Writer&lt;/a&gt;.
 </description>
 </item>
 
@@ -130,7 +282,7 @@ Uploaded some WYSIWYG HTML editor code to a GotDotNet <a href="http://www.gotdot
 <link>http://www.aisto.com/roeder/frontier?permalink=7</link> 
 <pubDate>Wed, 9 July 2003</pubDate>
 <description>
-Jamie Cansdale has created an Add-In for hosting .NET Reflector inside Visual Studio. Read the companion article <a href="http://www.codeproject.com/csharp/ReflectorAddin.asp" target='_blank'>here</a>. 
+Jamie Cansdale has created an &lt;a href=&quot;http://www.codeproject.com/csharp/ReflectorAddin.asp&quot; target=&quot;_blank"&gt;add-in&lt;/a&gt; for hosting Reflector inside Visual Studio.
 </description>
 </item>
 
@@ -140,15 +292,6 @@ Jamie Cansdale has created an Add-In for hosting .NET Reflector inside Visual St
 <pubDate>Sat, 21 June 2003</pubDate>
 <description>
 Peter Sawatzki has created a Delphi add-in which is included in Reflector.
-</description>
-</item>
-
-<item>
-<title>.NET Reflector 3.0</title>
-<link>http://www.aisto.com/roeder/frontier?permalink=2</link> 
-<pubDate>Mon, 12 May 2003</pubDate>
-<description>
-Reflector can be found at <a href='http://www.aisto.com/roeder/dotnet' target='_blank'>Programming.NET</a>.
 </description>
 </item>
 

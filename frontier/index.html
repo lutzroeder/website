@@ -1,7 +1,8 @@
 <html>
 <head>
 <title>Lutz Roeder's Weblog</title>
-<link rel='stylesheet' type='text/css' href='../default.css'>
+<link rel='stylesheet' type='text/css' href='../default.css' />
+<link rel='alternate' type='application/rss+xml' title='Lutz Roeder' href='rss.xml' />
 </head>
 
 <body background='../background.png'>
@@ -10,28 +11,28 @@
 <center>
 
 <table cellpadding='0' cellspacing='0' width='600' border='0'>
+<tr>
+<td valign='top'>
+<a href='.'><img src='default.png' border='0'/></a>
+</td>
+</tr>
 
 <tr>
-<td>
-
-<a href='.'><img src='frontier.png' border='0'/></a>
-
-<br/>
-</td>
+<td height='12' />
 </tr>
 
 <tr>
 <td>
 
 <table>
-
 <tr>
-
 <td width='100%' valign='top'>
 
 <br/>
 
 <p>
+<img src='0006-0.png' border='0'/><br/><br/>
+<img src='0005-0.png' border='0'/><br/><br/>
 <img src='0004-0.png' border='0'/><br/><br/>
 <img src='0003-0.png' border='0'/><br/><br/>
 <img src='0002-0.png' border='0'/><br/><br/>
@@ -46,9 +47,6 @@
 <%
 	XmlDocument document = new XmlDocument();
 	document.Load(this.Request.MapPath("rss.xml"));
-	
-	XslTransform transform = new XslTransform();
-	transform.Load(this.Request.MapPath("rss.xsl"));
 	
 	if (this.Request["PermaLink"] != null)
 	{
@@ -74,11 +72,15 @@
 			}
 		}
 	}
-	
-	XmlReader reader = transform.Transform(document, null);
-	reader.Read();
-	Response.Write(reader.ReadOuterXml());
-	reader.Close();
+
+	using (StringWriter output = new StringWriter())
+	{
+		XslTransform transform = new XslTransform();
+		transform.Load(this.Request.MapPath("rss.xsl"));
+		transform.Transform(document, new XsltArgumentList(), output);
+
+		this.Response.Write(output.ToString());
+	}
 %>
 </table>
 
