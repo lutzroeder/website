@@ -1,71 +1,104 @@
 <html>
 <head>
 <title>Lutz Roeder</title>
-<link rel='stylesheet' type='text/css' href='default.css'>
-<link href='favicon.ico' rel='shortcut icon' type='image/x-icon'/>
-<script src='http://www.google-analytics.com/urchin.js' type='text/javascript'>
+<meta http-equiv='content-type' content='text/html; charset=utf-8'>
+<link rel='alternate' type='application/rss+xml' title='RSS' href='feed://feeds.feedburner.com/lutzroeder' />
+<link rel='shortcut icon' type='image/x-icon' href='favicon.ico' />
+<link rel='stylesheet' type='text/css' href='default.css' />
+<script type='text/javascript'>
+	var _gaq = _gaq || [];
+	_gaq.push(['_setAccount', 'UA-54146-4']);
+	_gaq.push(['_trackPageview']);
+	(function() {
+ 		var ga = document.createElement('script');
+ 		ga.type = 'text/javascript';
+ 		ga.async = true;
+ 		ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+		var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+	})();
 </script>
 <script type='text/javascript'>
-_uacct = "UA-54146-4";
-urchinTracker();
+function document_onload()
+{
+	var url = "http://blog.lutzroeder.com/feeds/posts/default?alt=json-in-script&callback=blogger_response";
+	var script = document.createElement("script");
+	script.setAttribute("type", "text/javascript");
+	script.setAttribute("src", url + "&nocache=" + new Date().getTime());
+	document.getElementsByTagName("head").item(0).appendChild(script);
+}
+
+function blogger_response(json) 
+{
+	document.getElementById("feed").innerHTML = "";
+	var max = 7;
+	var length = json.feed.entry.length > max ? max : json.feed.entry.length;
+	for (var i = 0; i < length; i++) 
+	{
+		var entry = json.feed.entry[i];
+		var link = "";
+		for (var j = 0; j < entry.link.length; j++)
+			if (entry.link[j].rel == "alternate")
+				link = entry.link[j].href
+		document.getElementById("feed").innerHTML += "<a style='color:#000;' href='" + link + "'><b>' + entry.title.$t + "</b></a><div class='datetime'>' + Date.parseISO8601(entry.published.$t).toDateString() +"</div><div>' + entry.content.$t + "</div><br/>"
+	}
+}
+
+Date.parseISO8601 = function(timestamp)
+{
+	var date = new Date();
+	var match = timestamp.match("^([-+]?)(\\d{4,})(?:-?(\\d{2})(?:-?(\\d{2})" + "(?:[Tt ](\\d{2})(?::?(\\d{2})(?::?(\\d{2})(?:\\.(\\d{1,3})(?:\\d+)?)?)?)?" + "(?:[Zz]|(?:([-+])(\\d{2})(?::?(\\d{2}))?)?)?)?)?)?$");
+	if (match) 
+	{
+		var indices = [2, 3, 4, 5, 6, 7, 8, 10, 11];
+		for (var i = indices.length - 1; i >= 0; --i) match[indices[i]] = (typeof match[indices[i]] != "undefined" && match[indices[i]].length > 0) ? parseInt(match[indices[i]], 10) : 0;
+		if (match[1] == '-') match[2] *= -1;
+ 		var time = Date.UTC(match[2], match[3] - 1, match[4], match[5], match[6], match[7], match[8]);
+		if (typeof match[9] != "undefined" && match[9].length > 0) time += (match[9] == '+' ? -1 : 1) * (match[10] * 3600 * 1000 + match[11] * 60 * 1000);
+		if (match[2] >= 0 && match[2] <= 99) time -= 59958144000000;
+  		date.setTime(time);
+ 	}
+	return date;
+};
+
+Date.prototype.toDateString = function()
+{
+	return ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][this.getDay()] + ", " + 
+		["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"][this.getMonth()] + 
+		" " + this.getDate() + ", " + ((this.getYear() <  1000) ? (this.getYear() + 1900) : this.getYear());		
+};
 </script>
 </head>
-
-<body background='background.png'>
-
-<center>
-<br>
-<br>
-<br>
-
-<table cellpadding='0' cellspacing='0' width='550' border='0'>
-<tr>
-
-<td width='100' valign='top'>
-<img src="default.png"/>
-</td>
-
-<td width='10'>
-</td>
-
-<td width='400'>
-
-<p style='margin-bottom: 0.3em'>
-<b>Lutz Roeder</b><br>
-</p>
-<hr size='1' color='#8c8c8c'>
-
-<a href='http://www.microsoft.com/expression' style='text-decoration: none'>Microsoft Expression</a> Blend<br/>
-<a href='http://www.aisto.com/roeder/dotnet' style='text-decoration: none'>.NET Reflector</a>, author<br/>
-<a href='http://research.microsoft.com' style='text-decoration: none'>Microsoft Research</a>, <a href='http://en.wikipedia.org/wiki/Intentional_programming' style='text-decoration: none'>Intentional Programming</a><br>
-Ph.D. student, Bauhaus-Universit&auml;t Weimar
-<hr size='1' color='#8c8c8c'>
-
-<br>
-
-<b>Software Development</b>
-<p>
-<a href='dotnet/'>Programming.NET</a> - .NET Reflector, CommandBar, Resourcer, C#.<br>
-<a href='silverlight/'>Silverlight</a> - Monotone, Digger, Inplay, C#, XAML.<br>
-</p>
-
-<b>Design and Music</b>
-<p>
-<a href='audio/'>Audio</a> - Music for your ears.<br/>
-<a href='photo/'>Photography</a> - Pictures for your eyes.<br/>
-</p>
-
-<b>News and Publications</b>
-<p>
-<a href='http://blog.lutzroeder.com'>The Frontier</a> - Lutz Roeder's Weblog.<br/>
-<a href='paper/'>Talks and Papers</a> - Components, Interactive Code.<br/>
-</p>
-
-</td>
-
-</tr>
-</table>
-
-</center>
+<body onload='document_onload();'>
+<div class='navigation'>
+<div style='height:60px'>
+<div style='float:left'><b><a style='color:#fff;' href='http://www.lutzroeder.com'>Lutz Roeder</a></b></div>
+<div style='float:right'><a href='http://www.lutzroeder.com'><img src='/portrait.png' border='0' width='50' height='50'/></a></div>
+</div>
+<div class='about'>is working at <a href='http://www.microsoft.com'>Microsoft</a>. He also created the popular <a href='http://en.wikipedia.org/wiki/.NET_Reflector'>.NET Reflector</a> development tool.</div>
+<br/>
+<b>Software</b><br/>
+<a href='/html5'>HTML5</a><br/>
+<a href='/apple'>iOS</a><br/>
+<a href='/silverlight'>Silverlight</a><br/>
+<a href='/dotnet'>.NET</a><br/>
+<a href='/paper'>Papers</a><br/>
+<br/>
+<b>Media</b><br/>
+<a href='http://www.flickr.com/photos/lutzroeder'>Photography</a><br/>
+<a href='http://www.soundcloud.com/lutzroeder'>Music</a><br/>
+<br/>
+<div class='toolbar'>
+<a href='feed://feeds.feedburner.com/lutzroeder' title='Feed'><img src='/rss.png' border='0' width='24' height='24'></a>
+<a href='http://www.twitter.com/lutzroeder' title='Twitter'><img src='/twitter.png' border='0' width='24' height='24'></a>
+<a href='http://www.facebook.com/lutzroeder' title='Facebook'><img src='/facebook.png' border='0' width='24' height='24'></a>
+<a href='http://www.linkedin.com/in/lutzroeder' title='LinkedIn'><img src='/linkedin.png' border='0' width='24' height='24'></a>
+<a href='http://www.github.com/lutzroeder' title='GitHub'><img src='/git.png' border='0' width='24' height='24'></a>
+</div>
+</div>
+<div class='content'>
+<div id='feed'><img style='margin: 10px;' src='activity.gif' width='24' height='24'/></div>
+<a href='http://blog.lutzroeder.com'>Older Entries &raquo;</a>
+<br/><br/>
+</div>
 </body>
 </html>

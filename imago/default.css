@@ -1,0 +1,7 @@
+body        { font-family: Verdana, Tahoma, Arial, Helvetica; font-size: 70%; color: #aaaaaa; }
+td          { line-height: 10.5pt; font-family: Verdana, Tahoma, Arial, Helvetica; font-size: 70%; color: #aaaaaa; }
+b           { color: #cccccc; font-weight: bold; }
+p           { margin-top: 0.2em; margin-bottom: 1.0em; }
+a           { color: #cccccc; }
+a:hover     { color: #ffffff; }
+h2          { color: #cccccc; font-weight: bold; font-size: 120%; margin-bottom: 5; }

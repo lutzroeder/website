@@ -1,34 +1,19 @@
-
-body        { font-family: Verdana, Tahoma, Arial, Helvetica; font-size: 70%; color: #aaaaaa; }
-td          { line-height: 10.5pt; font-family: Verdana, Tahoma, Arial, Helvetica; font-size: 70%; color: #aaaaaa; }
-b           { color: #cccccc; font-weight: bold; }
-p           { margin-top: 0.2em; margin-bottom: 1.0em; }
-a           { color: #cccccc; }
-a:hover     { color: #ffffff; }
-h2          { color: #cccccc; font-weight: bold; font-size: 120%; margin-bottom: 5; }
-
-input 
-{ 
-	color: #aaaaaa; 
-	background: none; 
-	font-family: Tahoma, Arial; 
-	font-size: 100%; 
-	border: 1px solid; 
-	margin-top: 2; 
-	margin-bottom: 2; 
-	padding-left: 3; 
-	padding-top: 2; 
-	padding-bottom: 3;	
-}
-
-span.button 
-{ 
-	textAlign: center; 
-	cursor: hand; 
-	padding-left: 15;
-	padding-right: 15; 
-	border: 1px solid; 
-	padding-top: 2;
-    padding-bottom: 3; 
-    height: 21; 
-}
+html { -webkit-text-size-adjust: none; }
+body { font-family: "Lucida Grande", Verdana, Arial, sans-serif; font-size: 12px; background-color: #fff; color: #333; line-height: 18px; margin: 18px; }
+a { color: #08c; }
+a:link, a:visited, a:active { text-decoration: none; }
+a:hover { text-decoration: underline; }
+p { margin-top: 3px; margin-bottom: 9px; }
+h1 { font-weight: bold; font-size: 24px; line-height: 36px; margin-bottom: 12px; }
+h2 { font-weight: bold; font-size: 16px; line-height: 18px; margin-bottom: 8px; }
+h3 { font-weight: bold; font-size: 12px; line-height: 8px; margin-bottom: 8px;}
+h4 { font-weight: bold; font-size: 10px; line-height: 18px; }
+.navigation { position: absolute; top: 18px; left: 18px; width: 175px; padding: 10px; background-color:#000; color:#fff; }
+.content { width: 500px; margin-left: 215px; }
+.datetime { font-size: 10px; color: #aaa; margin-bottom: 4px; }
+.about { font-size: 10px; color: #aaa; margin-top: 5px; line-height: 16px; }
+.about a { color: #eee; }
+.toolbar a img { position: relative; float:left; }
+.toolbar img { margin: 2px; }
+.item { height: 160px;}
+.screenshot { float: left; margin-right: 10px; }
