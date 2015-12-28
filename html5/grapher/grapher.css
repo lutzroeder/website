@@ -1,0 +1,15 @@
+
+text { fill: #888; }
+
+.item circle { stroke-width: 0.5px; stroke: #444; stroke-opacity: 1; fill-opacity: 0.6; }
+.item text { fill: #000; fill-opacity: 0.2; alignment-baseline: middle; }
+
+.item:hover circle { stroke-width: 1px; stroke: #000; fill-opacity: 0.8; }
+.item:hover text { fill: #000; fill-opacity: 0.5; }
+
+.selectedItem circle, .selectedItem:hover circle { stroke: #000; stroke-width: 1.5px; fill-opacity: 1; }
+.selectedItem text, .selectedItem:hover text { fill: #000; fill-opacity: 1; }
+
+.axis path, .axis line { fill: none; stroke: #000; stroke-width: 0.25px; }
+.grid { fill: none; stroke: #777777; stroke-opacity: 0.1; stroke-width: 0.5px; }
+.origin { stroke: #AA0000; stroke-opacity: 0.4; stroke-dasharray: 4 2; stroke-width: 0.75px; }

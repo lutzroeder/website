@@ -1,8 +1,7 @@
 <html>
 <head>
 <title>Textor HTML Sample</title>
-<script type='text/javascript' src='http://www.google-analytics.com/ga.js'></script>
-<script type='text/javascript'>try { _gat._getTracker('UA-54146-8')._trackPageview(); } catch (e) { }</script>
+<meta http-equiv='X-UA-Compatible' content='IE=9'>
 <style type='text/css'>
 body    { background: #fff; margin-left: 0; margin-right: 0; margin-top: 0; }
 #editor { background: #fff; border: 1px solid #444; }
@@ -13,22 +12,22 @@ body    { background: #fff; margin-left: 0; margin-right: 0; margin-top: 0; }
 <script type='text/javascript' src='html.js'></script>
 <script type='text/javascript'>
 //<![CDATA[
-function document_load()
-{
-	var editor = new TextEditor(document.getElementById("editor"));
-	editor.setLanguage(new Html({ "text/css": new Css(), "text/javascript": new JavaScript() }));
-	editor.focus();
+function document_load() {
+    var editor = new Textor.TextEditor(document.getElementById("editor"));
+    editor.theme = {
+        "fontFamily": "Menlo,Lucida Console,Courier New",
+        "fontSize": "13" };
+    editor.language = new Textor.HtmlLanguage({ "text/css": new Textor.CssLanguage(), "text/javascript": new Textor.JavaScriptLanguage() });
+    editor.focus();
 
-	var request = new XMLHttpRequest()
-	request.open("GET", "demo_html.html", true);
-	request.onreadystatechange = function ()
-	{
-		if (request.readyState === 4)
-		{
-			editor.setText(request.responseText);
-		}
-	}
-	request.send(null);
+    var request = new XMLHttpRequest()
+    request.open("GET", "demo_html.html", true);
+    request.onreadystatechange = function () {
+        if (request.readyState === 4) {
+            editor.text = request.responseText;
+        }
+    }
+    request.send(null);
 }
 //]]>
 </script>
@@ -36,8 +35,8 @@ function document_load()
 <body onload='document_load();'>
 <br/>
 <br/>
-<div style='margin-left: auto; margin-right: auto; width: 1000px; height:750px;'>
-<canvas id='editor' width='1000' height='750' tabindex='1'></canvas>
+<div style='margin-left: auto; margin-right: auto; width: 1000px;'>
+<canvas id='editor' style='width:1000px;height:750px' tabindex='1'></canvas>
 </div>
 </body>
 </html>

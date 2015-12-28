@@ -3,95 +3,112 @@
 <title>Lutz Roeder's .NET Tools</title>
 <meta name='keywords' content='C#, .NET, CLR, WinFX, CLI, CCI, Decompiler, CodeDOM, csharp, Visual Basic, Java, dotnet, microsoft, example, class library, sourcecode, WinForms, Windows Forms, Digger, Reflector, CommandBar, ReBar, ToolBar, MenuBar, CoolBar, Windows XP, IE, DatePicker, Resourcer, download, object, class, browser, class browser, object browser, disassembler, MSIL, call tree, type references, member references, type search, member search, browser, editor, reflection, resource, generator, connector, Matrix, Package, Mapack, Lapack, Jama, Equation Solver, Eigenproblem, Gauss, Cholesky, Singular Value Decomposition, Least Squares, QR, LU'>
 <meta http-equiv='content-type' content='text/html; charset=utf-8'>
+<meta name='viewport' content='width=device-width'>
 <link rel='shortcut icon' type='image/x-icon' href='../favicon.ico' />
-<link rel='stylesheet' type='text/css' href='../default.css' />
+<link rel='stylesheet' type='text/css' href='../site.css' />
 <script type='text/javascript' src='http://www.google-analytics.com/ga.js'></script>
 <script type='text/javascript'>try { _gat._getTracker("UA-54146-2")._trackPageview(); } catch (e) { }</script>
+<style>
+    #reflector { background: url(reflector.png); width: 160px; height: 140px; border: 1px solid #000; }
+    #resourcer { background: url(resourcer.png); width: 160px; height: 140px; border: 1px solid #000; }
+    #writer { background: url(writer.png); width: 160px; height: 140px; border: 1px solid #000; }
+    #monotone { background: url(monotone.png); width: 160px; height: 140px; border: 1px solid #000; }
+    @media (-webkit-min-device-pixel-ratio:2) 
+    {
+        #reflector { background: url(reflector-2x.png); background-size: cover; }
+        #resourcer { background: url(resourcer-2x.png); background-size: cover; }
+        #writer { background: url(writer-2x.png); background-size: cover; }
+        #monotone { background: url(monotone-2x.png); background-size: cover; }
+    }
+</style>
 </head>
-
 <body>
 
 <div class='content'>
 
-Tools and source code for .NET, C# and Visual Basic:<br/><br/>
-
 <!-- .NET Reflector -->
 <div class='item'>
-	<div class='screenshot'><img src='reflector.png' width='160' height='140'/></div>
-	<div>
-		<b>.NET Reflector</b>
-		<p>Reflector is a class browser, analyzer and documentation viewer for .NET. Reflector allows to easily view, navigate, search, decompile and analyze .NET assemblies in C#, Visual Basic and IL.</p>
-		<p>Download <a href='http://www.aisto.com/roeder/dotnet'>here</a>. Presentation <a href='http://www.lutzroeder.com/paper/Reflector5.ppt'>here</a>.</p>
-	</div>
+    <div class='screenshot'><div id='reflector'></div></div>
+    <div>
+        <b>.NET Reflector</b>
+        <p>Reflector is a class browser, analyzer and documentation viewer. Reflector allows to easily view, navigate, search, decompile and analyze .NET assemblies in C#, Visual Basic and IL.</p>
+        <p>Download <a href='http://www.aisto.com/roeder/dotnet'>here</a>. Presentation <a href='/paper/Reflector5.ppt'>here</a>.</p>
+    </div>
 </div>
 
 <!-- .NET Resourcer -->
 <div class='item'>
-	<div class='screenshot'><img src='resourcer.png' width='160' height='140'/></div>
-	<div>
-		<b>.NET Resourcer</b>
-		<p>Resourcer is an editor for .resources and .resx file formats used with the .NET platform. Resourcer allows editing of strings, import of bitmaps and merging of resources from different sources.
-		</p>
-		<p>Download <a href='https://github.com/downloads/lutzroeder/resourcer/resourcer.zip'>here</a>. Source <a href='https://github.com/lutzroeder/resourcer'>here</a>.</p>
-	</div>
+    <div class='screenshot'><div id='resourcer'></div></div>
+    <div>
+        <b>.NET Resourcer</b>
+        <p>Resourcer is an editor for .resources and .resx files used with the .NET platform. Resourcer allows editing of strings, import of bitmaps and merging of resources from different sources.
+        </p>
+        <p>Download <a href='https://github.com/downloads/lutzroeder/resourcer/resourcer.zip'>here</a>. Source <a href='https://github.com/lutzroeder/resourcer'>here</a>.</p>
+    </div>
 </div>
-	
+    
 <!-- Writer -->
 <div class='item'>
-	<div class='screenshot'><img src='writer.png' width='160' height='140'/></div>
-	<div>
-		<b>Writer</b>
-		<p>Writer is a simple editor for HTML files. Writer supports text layout and formatting, hyperlink editing and insertion of dates and pictures.</p>
-		<p>Download <a href='https://github.com/downloads/lutzroeder/writer/writer.zip'>here</a>. Source <a href='https://github.com/lutzroeder/writer'>here</a>.</p>
-	</div>
+    <div class='screenshot'><div id='writer'></div></div>
+    <div>
+        <b>Writer</b>
+        <p>Writer is a simple editor for HTML files. Writer supports text layout and formatting, hyperlink editing and insertion of dates and pictures.</p>
+        <p>Download <a href='https://github.com/downloads/lutzroeder/writer/writer.zip'>here</a>. Source <a href='https://github.com/lutzroeder/writer'>here</a>.</p>
+    </div>
 </div>
 
-<!-- Mapack -->
+<!-- Monotone -->
 <div class='item'>
-	<div class='screenshot'><img src='mapack.png' width='160' height='140'/></div>
-	<div>
-		<b>Mapack</b>
-		<p>Mapack is a C# class library for basic linear algebra. It computes Norm, Determinant, Cholesky, LU, QR, SVD, least squares and eigenproblems.</p>
-		<p>Source <a href='https://github.com/lutzroeder/mapack'>here</a>.</p>
-	</div>
-</div>
-
-<!-- CommandBar -->
-<div class='item'>
-	<div class='screenshot'><img src='commandbar.png' width='160' height='140'/></div>
-	<div>
-		<b>CommandBar</b>
-		<p>The CommandBar class library extends Windows Forms with classes for handling command bars and bitmaped menus.</p>
-		<p>Source <a href='https://github.com/lutzroeder/commandbar'>here</a>.</p>
-	</div>
+    <div class='screenshot'><a href='monotone/'><div id='monotone'></div></a></div>
+    <div>
+        <a style='color: #000;' href='monotone/'><b>Monotone</b></a>
+        <p>A Silverlight graphics demo in XAML and C# with MP3 audio.</p>
+        <p>Start <a href='monotone/'>here</a>. Source <a href='http://www.github.com/lutzroeder/monotone'>here</a>.</p>
+    </div>
 </div>
 
 </div>
 
+<style>
+#portrait { background: url(/portrait.jpg); width: 50px; height: 50px; }
+@media (-webkit-min-device-pixel-ratio:2) 
+{
+    #portrait { background: url(/portrait-2x.jpg); background-size: cover; }
+}
+</style>
 <div class='navigation'>
 <div style='height:60px'>
-<div style='float:left'><b><a style='color:#fff;' href='http://www.lutzroeder.com'>Lutz Roeder</a></b></div>
-<div style='float:right'><a href='http://www.lutzroeder.com'><img src='/portrait.png' border='0' width='50' height='50'/></a></div>
+<div style='float:left'><b><a style='color:#fff;' href='/'>Lutz Roeder</a></b></div>
+<div style='float:right'>
+    <a href='/'><div id='portrait' style='border-radius:50%'></div></a>
 </div>
-<div class='about'>is working at <a href='http://www.microsoft.com'>Microsoft</a>. He also created the popular <a href='http://en.wikipedia.org/wiki/.NET_Reflector'>.NET Reflector</a> development tool.</div>
+</div>
+<div class='about'>
+is working at <a href='http://www.microsoft.com'>Microsoft</a>.<br/>
+He also created <a href='http://en.wikipedia.org/wiki/.NET_Reflector'>.NET Reflector</a>.
 <br/>
-<b>Software</b><br/>
-<a href='/html5'>HTML5</a><br/>
-<a href='/apple'>iOS</a><br/>
-<a href='/silverlight'>Silverlight</a><br/>
-<a href='/dotnet'>.NET</a><br/>
-<a href='/paper'>Papers</a><br/>
 <br/>
-<b>Media</b><br/>
-<a href='http://www.flickr.com/photos/lutzroeder'>Photography</a><br/>
-<a href='http://www.soundcloud.com/lutzroeder'>Music</a><br/>
+software
+<div style='float:right'>
+<a href='/html5'>html5</a> | 
+<a href='/dotnet'>.net</a> |
+<a href='/apple'>iOS</a> |
+<a href='http://www.github.com/lutzroeder' title='GitHub'>github</a>
+</div>
 <br/>
-<div class='toolbar'>
-<a href='feed://feeds.feedburner.com/lutzroeder' title='Feed'><img src='/rss.png' border='0' width='24' height='24'></a>
-<a href='http://www.twitter.com/lutzroeder' title='Twitter'><img src='/twitter.png' border='0' width='24' height='24'></a>
-<a href='http://www.facebook.com/lutzroeder' title='Facebook'><img src='/facebook.png' border='0' width='24' height='24'></a>
-<a href='http://www.linkedin.com/in/lutzroeder' title='LinkedIn'><img src='/linkedin.png' border='0' width='24' height='24'></a>
-<a href='http://www.github.com/lutzroeder' title='GitHub'><img src='/git.png' border='0' width='24' height='24'></a>
+media
+<div style='float:right'>
+<a href='http://www.500px.com/lutzroeder'>photo</a> | 
+<a href='http://www.soundcloud.com/lutzroeder'>music</a> |
+<a href='/paper'>text</a>
+</div>
+<br/>
+contact
+<div style='float:right'>
+<a href='http://www.linkedin.com/in/lutzroeder' title='LinkedIn'>linkedin</a> |
+<a href='http://www.twitter.com/lutzroeder' title='Twitter'>twitter</a>
+</div>
+<br/>
 </div>
 </div>
 
