@@ -2,105 +2,20 @@
 <head>
 <title>Lutz Roeder</title>
 <meta http-equiv='content-type' content='text/html; charset=utf-8'>
-<meta name='viewport' content='width=device-width'>
-<link rel='alternate' type='application/rss+xml' title='RSS' href='feed://feeds.feedburner.com/lutzroeder' />
-<link rel='shortcut icon' type='image/x-icon' href='favicon.ico' />
+<meta http-equiv='X-UA-Compatible' content='IE=9'>
+<meta name='description' content='Software Architect at Microsoft working on Visual Studio. Created .NET Reflector. Interested in Artificial Intelligence, Deep Learning, Developer Tools, Photography and Music production.' />
+<meta name='viewport' content='width=device-width, initial-scale=1' />
+<link rel='alternate' type='application/atom+xml' title='Lutz Roeder' href='http://feeds.feedburner.com/lutzroeder' />
+{{ ./link.html }}
 <link rel='stylesheet' type='text/css' href='site.css' />
-<style>
-#activity { background: url(/activity.gif); width: 24px; height: 24px; margin-bottom: 10px; }
-@media (-webkit-min-device-pixel-ratio:2) 
-{
-    #activity { background: url(/activity-2x.gif); background-size: cover; }
-}
-</style>
-<script type='text/javascript'>
-    var _gaq = _gaq || [];
-    _gaq.push(['_setAccount', 'UA-54146-4']);
-    _gaq.push(['_trackPageview']);
-    (function() {
-        var ga = document.createElement('script');
-        ga.type = 'text/javascript';
-        ga.async = true;
-        ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
-        var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
-    })();
-</script>
-<script type='text/javascript'>
-
-function document_onload() {
-    var url = "http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&num=10&q=http://feeds.feedburner.com/lutzroeder&callback=feedburner_callback";
-    var script = document.createElement("script");
-    script.setAttribute("type", "text/javascript");
-    script.setAttribute("src", url + "&nocache=" + new Date().getTime());
-    document.getElementsByTagName("head").item(0).appendChild(script);
-}
-
-function feedburner_callback(json) {
-    document.getElementById("feed").innerHTML = "";
-    var max = 7;
-    var entries = json["responseData"]["feed"]["entries"]; 
-    var length = entries.length > max ? max : entries.length;
-    for (var i = 0; i < length; i++) {
-        var entry = entries[i];
-        document.getElementById("feed").innerHTML += "<h1><a style='color:#333;' href='" + entry["link"] + "'>" + entry["title"] + "</a></h1><div class='datetime'>" + new Date(entry["publishedDate"]).toDateString() +"</div><div>" + entry["content"] + "</div>"
-    }
-}
-
-Date.prototype.toDateString = function() {
-    var days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    var months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-    return days[this.getDay()] + ", " + months[this.getMonth()] + " " + this.getDate() + ", " + ((this.getYear() <  1000) ? (this.getYear() + 1900) : this.getYear());      
-}
-
-</script>
+<script type='text/javascript'>try { _gat._getTracker("UA-54146-4")._trackPageview(); } catch (e) { }</script>
 </head>
-<body onload="document_onload();">
-<style>
-#portrait { background: url(/portrait.jpg); width: 50px; height: 50px; }
-@media (-webkit-min-device-pixel-ratio:2) 
-{
-    #portrait { background: url(/portrait-2x.jpg); background-size: cover; }
-}
-</style>
-<div class='navigation'>
-<div style='height:60px'>
-<div style='float:left'><b><a style='color:#fff;' href='/'>Lutz Roeder</a></b></div>
-<div style='float:right'>
-    <a href='/'><div id='portrait' style='border-radius:50%'></div></a>
-</div>
-</div>
-<div class='about'>
-is working at <a href='http://www.microsoft.com'>Microsoft</a>.<br/>
-He also created <a href='http://en.wikipedia.org/wiki/.NET_Reflector'>.NET Reflector</a>.
-<br/>
-<br/>
-software
-<div style='float:right'>
-<a href='/html5'>html5</a> | 
-<a href='/dotnet'>.net</a> |
-<a href='/apple'>iOS</a> |
-<a href='http://www.github.com/lutzroeder' title='GitHub'>github</a>
-</div>
-<br/>
-media
-<div style='float:right'>
-<a href='http://www.500px.com/lutzroeder'>photo</a> | 
-<a href='http://www.soundcloud.com/lutzroeder'>music</a> |
-<a href='/paper'>text</a>
-</div>
-<br/>
-contact
-<div style='float:right'>
-<a href='http://www.linkedin.com/in/lutzroeder' title='LinkedIn'>linkedin</a> |
-<a href='http://www.twitter.com/lutzroeder' title='Twitter'>twitter</a>
-</div>
-<br/>
-</div>
-</div>
+<body>
+{{ ./navigation.html }}
 <div class='content'>
-<div id='feed'><div id='activity'></div></div>
-<a href='http://blog.lutzroeder.com'>Older Entries &raquo;</a>
-<br/><br/>
+<h3>Latest</h3>
+{{ blog }}
+</div>
 </div>
 </body>
 </html>

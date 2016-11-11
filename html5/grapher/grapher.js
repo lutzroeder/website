@@ -5,13 +5,7 @@ var Grapher;
             this._selection = {};
             this._radiusScale = d3.scale.sqrt();
             this._element = d3.select(element);
-            this._margin = { top: 20, right: 20, bottom: 80, left: 40 };
-            var width = parseFloat(this._element.attr("width"));
-            var height = parseFloat(this._element.attr("height"));
-            this._width = width - this._margin.right - this._margin.left;
-            this._height = height - this._margin.top - this._margin.bottom;
-            this.xScale = d3.scale.linear();
-            this.yScale = d3.scale.linear();
+            this.reset();
         }
         Object.defineProperty(MotionChart.prototype, "dataSource", {
             set: function (value) {
@@ -132,7 +126,20 @@ var Grapher;
                 .each("end", function () { self.stopTransition(); });
         };
         MotionChart.prototype.stopTransition = function () {
-            this._diagram.transition().duration(0);
+            if (this._diagram) {
+                this._diagram.transition().duration(0);
+            }
+        };
+        MotionChart.prototype.reset = function () {
+            this.stopTransition();
+            this._element.selectAll("*").remove();
+            this._margin = { top: 20, right: 20, bottom: 80, left: 40 };
+            var width = parseFloat(this._element.attr("width"));
+            var height = parseFloat(this._element.attr("height"));
+            this._width = width - this._margin.right - this._margin.left;
+            this._height = height - this._margin.top - this._margin.bottom;
+            this.xScale = d3.scale.linear();
+            this.yScale = d3.scale.linear();
         };
         MotionChart.prototype.draw = function () {
             this.createScales();
@@ -323,6 +330,10 @@ var Grapher;
                 if (item[axis] instanceof Array) {
                     var dates = item[axis].map(function (d) { return d[0]; }).map(function (date) { return self.createDate(date); });
                     var values = item[axis].map(function (d) { return d[1]; });
+                    if (self._endTime && dates[dates.length - 1] < self._endTime) {
+                        dates.push(self._endTime);
+                        values.push(values[values.length - 1]);
+                    }
                     item[axis] = d3.time.scale().domain(dates).range(values);
                     item[axis]["__min"] = dates[0];
                     item[axis]["__max"] = dates[dates.length - 1];

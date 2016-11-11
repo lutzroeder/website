@@ -1,41 +1,76 @@
-<meta charset='utf-8'>
 <html>
 <head>
 <title>The Wealth of Tech Companies</title>
+<meta http-equiv='content-type' content='text/html; charset=utf-8'>
+<meta http-equiv='X-UA-Compatible' content='IE=9'>
 <script type='text/javascript' src='http://www.google-analytics.com/ga.js'></script>
 <script type='text/javascript'>try { _gat._getTracker('UA-54146-8')._trackPageview(); } catch (e) { }</script>
-<meta http-equiv='X-UA-Compatible' content='IE=9' />
 <link href='https://fonts.googleapis.com/css?family=Open+Sans:400,700' rel='stylesheet' type='text/css'>
 <style>
-body { font: 13px 'Open Sans', Arial, sans-serif; line-height: 22px; }
-svg { font: 9px 'Open Sans', Arial, sans-serif; }
+html {
+    font-family: sans-serif;
+    -ms-text-size-adjust: 100%;
+    -webkit-text-size-adjust: 100%;
+    -webkit-text-rendering: optimizeLegibility;
+    -moz-text-rendering: optimizeLegibility;
+    -ms-text-rendering: optimizeLegibility;
+    -o-text-rendering: optimizeLegibility;
+}
+body { 
+    font-family: "Open Sans", Arial, sans-serif; 
+    font-size: 13px;
+    line-height: 22px;
+    max-width: 740px !important;
+    padding: 0px 20px 0px 20px;
+    margin: 32px auto 32px auto;
+    box-sizing: border-box;
+}
+svg { font: 9px "Open Sans", Arial, sans-serif; }
 </style>
 </head>
-<body style='width:700px;margin:30px'>
+<body>
 <h1>The Wealth of Tech Companies</h1>
-<p>Inspired by Hans Rosling's <a href='https://www.ted.com/talks/hans_rosling_reveals_new_insights_on_poverty'>TED</a> talk, this motion chart 
+<p>Inspired by Hans Rosling"s <a href='https://www.ted.com/talks/hans_rosling_reveals_new_insights_on_poverty'>TED</a> talk, this motion chart 
 is showing net income, revenue, equity and market cap of some large tech companies over time.</p>
 <div>
+<select id='selector'>
+  <option>Annual Revenue, Annual Income, Shareholder Equity, Market Capitalization</option>
+  <option>Market Capitalization, Shareholder Equity, Annual Income, Annual Revenue</option>
+  <option>Market Capitalization, Annual Income, Shareholder Equity, Annual Revenue</option>
+<select>
 <svg id='chart' width='700' height='500' />
 <link rel='stylesheet' type='text/css' href='grapher.css' />
 <script src='https://d3js.org/d3.v3.min.js'></script>
 <script src='grapher.js'></script>
 <script>
-d3.json('default.json', function(data) {
-	var chart = new Grapher.MotionChart(document.getElementById('chart'));
-	chart.dataSource = data;
-	chart.labelData = 'Name';
-	chart.xData = 'Annual Revenue';
-  	chart.yData = 'Annual Income';
-	chart.radiusData = 'Shareholder Equity';
-	chart.colorData = 'Market Capitalization';
-	chart.startTime = new Date("2002/12/31");
-	chart.endTime = new Date("2014/12/31");
-	chart.select('Apple');
-	chart.select('Google');
-	chart.select('Microsoft');
-	chart.draw();
-	chart.startTransition();
+
+var selector = document.getElementById("selector");
+var chart = new Grapher.MotionChart(document.getElementById("chart"));
+
+function update() {
+    var axes = selector.options[selector.selectedIndex].text.split(",").map(function (text) { return text.trim(); });
+    d3.json("data.json", function(data) {
+        chart.reset();
+        chart.dataSource = data;
+        chart.labelData = "Name";
+        chart.xData = axes[0];
+        chart.yData = axes[1];
+        chart.radiusData = axes[2];
+        chart.colorData = axes[3];
+        chart.startTime = new Date("2002/12/31");
+        chart.endTime = new Date("2015/12/31");
+        chart.select("Apple");
+        chart.select("Google");
+        chart.select("Microsoft");
+        chart.draw();
+        chart.startTransition();
+    });
+}
+
+update();
+
+selector.addEventListener("change", function() {
+    update();
 });
 </script>
 </div>

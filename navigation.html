@@ -1,0 +1,79 @@
+<div class='header' onload='header_onload()'>
+<div class='content'>
+<div class='layout'>
+<a href='/'><img class='portrait' src='/portrait.jpg' /></a>
+<div class='title'><a href='/'>Lutz Roeder</a></div>
+<div class='subtitle'>Software Architect at <a href='https://www.microsoft.com'>Microsoft</a>, created <a href='https://en.wikipedia.org/wiki/.NET_Reflector'>.NET Reflector</a>.</div>
+<div id='toolbar' class='toolbar'>
+<span class='line'>
+<a href='/'>Blog</a>
+<span class='middot'></span>
+<a href='/html5'>HTML5</a>
+<span class='middot'></span>
+<a href='/dotnet'>.NET</a>
+<span class='middot'></span>
+<a href='/apple'>iOS</a>
+<span class='middot'></span>
+</span>
+<span class='line'>
+<a class='icon' target='_blank' href='http://www.github.com/lutzroeder' title='GitHub'><span class='symbol'>&#xe237;</span></a>
+<a class='icon' target='_blank' href='https://www.linkedin.com/in/lutzroeder' title='LinkedIn'><span class='symbol'>&#xe252;</span></a>
+<a class='icon' target='_blank' href='http://www.slideshare.net/lutzroeder/presentations' title='SlideShare'><span class='symbol'>&#xe276;</span></a>
+<a class='icon' target='_blank' href='http://www.twitter.com/lutzroeder' title='Twitter'><span class='symbol'>&#xe286;</span></a>
+<span class='middot'></span>
+<a class='icon' target='_blank' href='http://www.500px.com/lutzroeder' title='500px'><span class='symbol'>&#xe200;</span></a>
+<a class='icon' target='_blank' href='http://www.soundcloud.com/lutzroeder' title='SoundCloud'><span class='symbol'>&#xe278;</span></a>
+<a class='icon' target='_blank' href='http://www.facebook.com/lutzroeder' title='Facebook'><span class='symbol'>&#xe227;</span></a>
+</span>
+</div>
+<button id='subscribe' onclick='location.href="http://feeds.feedburner.com/lutzroeder"'><span>Subscribe</span></button>
+</div>
+</div>
+</div>
+<script type='text/javascript'>
+
+registerLoadEventListener(navigation_load);
+
+function registerLoadEventListener(callback)
+{
+    function detachLoadEventListener() {
+        if (document.addEventListener ) {
+            document.removeEventListener("DOMContentLoaded", raiseLoadEventListener, false);
+            window.removeEventListener("load", raiseLoadEventListener, false);
+        } else {
+            document.detachEvent("onreadystatechange", raiseLoadEventListener);
+            window.detachEvent("onload", raiseLoadEventListener);
+        }
+    }
+
+    function raiseLoadEventListener() {
+        if (document.addEventListener || event.type === "load" || document.readyState === "complete") {
+            detachLoadEventListener();
+            callback();
+        }
+    }
+
+    if (document.readyState === "complete") {
+        callback();
+    }
+    else if (document.addEventListener) {
+        document.addEventListener("DOMContentLoaded", raiseLoadEventListener, false);
+        window.addEventListener("load", raiseLoadEventListener, false);
+    }
+    else {
+        document.attachEvent("onreadystatechange", raiseLoadEventListener);
+        window.attachEvent("onload", raiseLoadEventListener);
+    }
+}
+
+function navigation_load() {
+    var path = location.pathname.split("/")[1];
+    var link = document.body.querySelector("#toolbar").querySelector("a[href='/'" + path + "']");
+    if (link != null) {
+        link.className = link.className + " active";
+    }
+    if (path != null && path != "") {
+        document.body.querySelector("#subscribe").style.visibility = "hidden";
+    }
+}
+</script>
