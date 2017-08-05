@@ -1,59 +1,42 @@
 <html>
 <head>
-<title>Lutz Roeder's .NET Tools</title>
+<title>{{name}}'s .NET Tools</title>
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){ (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+ga('create', 'UA-54146-2', 'auto');  ga('send', 'pageview');</script>
 <meta name='keywords' content='C#, .NET, CLR, WinFX, CLI, CCI, Decompiler, CodeDOM, csharp, Visual Basic, Java, dotnet, microsoft, example, class library, sourcecode, WinForms, Windows Forms, Digger, Reflector, CommandBar, ReBar, ToolBar, MenuBar, CoolBar, Windows XP, IE, DatePicker, Resourcer, download, object, class, browser, class browser, object browser, disassembler, MSIL, call tree, type references, member references, type search, member search, browser, editor, reflection, resource, generator, connector, Matrix, Package, Mapack, Lapack, Jama, Equation Solver, Eigenproblem, Gauss, Cholesky, Singular Value Decomposition, Least Squares, QR, LU'>
-<meta http-equiv='content-type' content='text/html; charset=utf-8'>
-<meta name='viewport' content='width=device-width, initial-scale=1' />
-{{ ../link.html }}
-<link rel='stylesheet' type='text/css' href='../site.css' />
-<script type='text/javascript' src='http://www.google-analytics.com/ga.js'></script>
-<script type='text/javascript'>try { _gat._getTracker("UA-54146-2")._trackPageview(); } catch (e) { }</script>
+{{>meta.html}}
+<style type='text/css'>
+{{>site.css}}
+</style>
 </head>
-
 <body>
-
-{{ ../navigation.html }}
-
-<div class='content'>
-
-<h3>.NET Tools</h3>
-
+{{>header.html}}
 <!-- .NET Reflector -->
 <div class='item'>
-    <div class='screenshot'><img src='reflector.png'></div>
-    <div class='description'>
-        <h1>.NET Reflector</h1>
-        <p>Reflector is a class browser, analyzer and documentation viewer. Reflector allows to easily view, navigate, search, decompile and analyze .NET assemblies in C#, Visual Basic and IL.</p>
-        <p>Download <a href='http://www.aisto.com/roeder/dotnet'>here</a>. Presentation <a href='http://www.slideshare.net/LutzRoeder/net-reflector-50-56631978'>here</a>.</p>
+    <div class='logo border'><a target='_blank' href='http://www.reflector.net'><img src='reflector.png' width='160' height='140' /></a></div>
+    <h1><a target='_blank' href='http://www.reflector.net'>.NET Reflector</a></h1>
+    <div class='content'>
+        <p>Reflector is a class browser and documentation viewer to easily view, navigate, search, decompile and analyze .NET assemblies in C# and IL.</p>
+        <p>Download <a target='_blank' href='http://www.reflector.net'>here</a>. Presentation <a target='_blank' href='http://www.slideshare.net/LutzRoeder/net-reflector-50-56631978'>here</a>.</p>
     </div>
 </div>
-
-<div class='separator'></div>
-
 <!-- .NET Resourcer -->
 <div class='item'>
-    <div class='screenshot'><img src='resourcer.png'></div>
-    <div class='description'>
-        <h1>.NET Resourcer</h1>
-        <p>Resourcer is an editor for .resources and .resx files used with the .NET platform. Resourcer allows editing of strings, import of bitmaps and merging of resources from different sources.
-        </p>
-        <p>Download and source <a href='https://github.com/lutzroeder/Resourcer/releases/latest'>here</a>.
+    <div class='logo border'><a target='_blank' href='https://github.com/lutzroeder/Resourcer/releases/latest'><img src='resourcer.png' width='160' height='140' /></a></div>
+    <h1><a target='_blank' href='https://github.com/lutzroeder/Resourcer/releases/latest'>.NET Resourcer</a></h1>
+    <div class='content'>
+        <p>Resourcer is an editor for .resources and .resx files used with the .NET platform. Resourcer allows editing of strings and merging of resource files.</p>
+        <p>Download and source <a target='_blank' href='https://github.com/lutzroeder/Resourcer/releases/latest'>here</a>.</p>
     </div>
 </div>
-
-<div class='separator'></div>
-
 <!-- Writer -->
 <div class='item'>
-    <div class='screenshot'><img src='writer.png'></div>
-    <div class='description'>
-        <h1>Writer</h1>
+    <div class='logo border'><a target='_blank' href='https://github.com/lutzroeder/Writer/releases/latest'><img src='writer.png' width='160' height='140' /></a></div>
+    <h1><a target='_blank' href='https://github.com/lutzroeder/Writer/releases/latest'>Writer</a></h1>
+    <div class='content'>
         <p>Writer is a simple editor for HTML files. Writer supports text layout and formatting, hyperlink editing and insertion of dates and pictures.</p>
-        <p>Download and source <a href='https://github.com/lutzroeder/Writer/releases/latest'>here</a>.
+        <p>Download and source <a target='_blank' href='https://github.com/lutzroeder/Writer/releases/latest'>here</a>.</p>
     </div>
 </div>
-
-</div>
-
 </body>
 </html>

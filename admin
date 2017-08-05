@@ -1,0 +1,479 @@
+#!/bin/bash
+
+pushd $(dirname ${BASH_SOURCE[0]}) > /dev/null
+
+configuration=$(basename ${BASH_SOURCE[0]}).cfg
+source "${configuration}"
+
+bold=$(tty -s && tput bold)
+regular=$(tty -s && tput sgr0)
+underline=$(tty -s && tput smul)
+error=$(tty -s && tput setaf 1)
+
+server_install() {
+    server_uninstall
+
+    echo "${bold}apt-get update${regular}"
+    if [ ${runtime} = "node" ]; then
+        if [ -z "$(which node)" ]; then
+            curl -sL https://deb.nodesource.com/setup_6.x | sudo -E bash -
+        fi
+    fi
+    sudo apt-get -qq update
+
+    if [ ${runtime} = "go" ]; then 
+        echo "${bold}apt-get install golang${regular}"
+        sudo apt-get -qq install --yes golang
+    elif [ ${runtime} = "python" ]; then
+        echo "${bold}apt-get install python${regular}"
+        sudo apt-get -qq install --yes python python-dateutil
+    else
+        echo "${bold}apt-get install nodejs${regular}"
+        sudo apt-get -qq install --yes nodejs
+    fi
+
+    echo "${bold}apt-get install nginx${regular}"
+    sudo apt-get -qq install --yes nginx
+
+    echo "${bold}install nginx.service${regular}"
+    sudo systemctl stop nginx.service
+cat << EOF >> "${site}.conf"
+server {
+    listen 80;
+EOF
+    if [ -n "${domain}" ]; then
+        if sudo test -f "/etc/letsencrypt/live/${domain}/fullchain.pem" && sudo test -f "/etc/letsencrypt/live/${domain}/privkey.pem"; then
+ssl=$(cat << EOF
+    listen 443 ssl;
+    ssl_certificate /etc/letsencrypt/live/${domain}/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/${domain}/privkey.pem;
+    ssl_prefer_server_ciphers on;
+    ssl_ciphers 'EECDH+AESGCM:EDH+AESGCM:AES256+EECDH:AES256+EDH';
+EOF
+)
+cat << EOF >> "${site}.conf"
+${ssl}
+    server_name ${domain};
+    return 301 https://www.${domain}\$request_uri;
+}
+server {
+    listen 80;
+    server_name www.${domain};
+    return 301 https://www.${domain}\$request_uri;
+}
+server {
+${ssl}
+    server_name www.${domain};
+EOF
+        else
+cat << EOF >> "${site}.conf"
+server {
+    listen 80
+    server_name www.${domain};
+EOF
+        fi
+    fi
+cat << EOF >> "${site}.conf"
+    gzip on;
+    gzip_proxied any;
+    gzip_min_length 1000;
+    gzip_http_version 1.0;
+    gzip_disable 'msie6';
+    gzip_types text/plain text/css text/javascript application/json application/atom+xml application/rss+xml;
+    gzip_vary on;
+    location / {
+        proxy_pass http://localhost:8080;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection 'upgrade';
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_cache_bypass \$http_upgrade;
+        proxy_ssl_session_reuse off;
+    }
+}
+EOF
+    sudo cp "${site}.conf" "/etc/nginx/sites-available/${site}.conf"
+    rm "${site}.conf"
+    sudo rm -f "/etc/nginx/sites-enabled/default"
+    sudo ln -f -s "/etc/nginx/sites-available/${site}.conf" "/etc/nginx/sites-enabled/${site}.conf"
+    sudo systemctl start "nginx.service"
+    if [ $(systemctl is-active "nginx.service") != "active" ]; then
+        sudo systemctl status "nginx.service" --no-pager --lines=25 --full
+        echo "${bold}${error}ngnix.service is not active.${regular}"
+        return
+    fi
+
+    if sudo test -f "/etc/letsencrypt/live/${domain}/fullchain.pem" && sudo test -f "/etc/letsencrypt/live/${domain}/privkey.pem"; then
+        echo "${bold}install ${site}-cert.service${regular}"
+cat > "${site}-cert.service" << EOF
+[Unit]
+Description=${site}-cert.service
+[Service]
+Type=oneshot
+WorkingDirectory=$(pwd)
+ExecStart=/bin/bash $(pwd)/admin cert
+User=$(whoami)
+Group=$(whoami)
+SyslogIdentifier=${site}-cert.service
+EOF
+        sudo cp "${site}-cert.service" "/etc/systemd/system/${site}-cert.service"
+        rm "${site}-cert.service"
+
+        echo "${bold}install ${site}-cert.timer${regular}"
+cat > "${site}-cert.timer" << EOF
+[Unit]
+Description=${site}-cert.timer
+[Timer]
+OnCalendar=Mon *-*-* 00:00:00
+Persistent=true
+Unit=${site}-cert.service
+[Install]
+WantedBy=timers.target
+EOF
+        sudo cp "${site}-cert.timer" "/etc/systemd/system/${site}-cert.timer"
+        rm "${site}-cert.timer"
+        sudo systemctl enable "${site}-cert.timer"
+        sudo systemctl start "${site}-cert.timer"
+        if [ $(systemctl is-active "${site}-cert.timer") != "active" ]; then
+            sudo systemctl status "${site}-cert.timer" --no-pager --lines=25 --full
+            echo "${bold}${error}${site}-cert.timer is not active.${regular}"
+            return
+        fi
+    fi
+
+    echo "${bold}install ${site}.service${regular}"
+    if [ ${runtime} = "go" ]; then 
+        command="$(which go) run $(pwd)/app.go"
+        environment="GO_ENV=production"
+    elif [ ${runtime} = "python" ]; then
+        command="$(which python) $(pwd)/app.py"
+        environment="PYTHON_ENV=production"
+    else
+        command="$(which node) $(pwd)/app.js"
+        environment="NODE_ENV=production"
+    fi
+cat > "${site}.service" << EOF
+[Unit]
+Description=${site}.service
+[Service]
+WorkingDirectory=$(pwd)
+ExecStart=${command}
+Environment=${environment}
+Restart=always
+RestartSec=10
+User=$(whoami)
+Group=$(whoami)
+SyslogIdentifier=${site}.service
+[Install]
+WantedBy=multi-user.target
+EOF
+    sudo cp "${site}.service" "/etc/systemd/system/${site}.service"
+    rm "${site}.service"
+    sudo systemctl enable "${site}.service"
+    if [ $(systemctl is-enabled "${site}.service") != "enabled" ]; then
+        sudo systemctl status "${site}.service" --no-pager --lines=25 --full
+        echo "${bold}${error}${site}.service is not enabled.${regular}"
+        return
+    fi
+}
+
+server_uninstall() {
+    server_stop
+    if [ -f "/etc/systemd/system/${site}-cert.timer" ]; then
+        echo "${bold}uninstall ${site}-cert.timer${regular}"
+        if [ $(systemctl is-active "${site}-cert.timer") = "active" ]; then
+            sudo systemctl stop "${site}-cert.timer"
+            if [ $(systemctl is-active "${site}-cert.timer") != "inactive" ]; then
+                sudo systemctl status "${site}-cert.timer" --no-pager --lines=25 --full
+                echo "${bold}${error}${site}-cert.timer is not inactive.${regular}"
+                return
+            fi
+        fi
+        if [ $(systemctl is-enabled ${site}-cert.timer) = "enabled" ]; then
+            sudo systemctl disable "${site}-cert.timer"
+            if [ $(systemctl is-enabled "${site}-cert.timer") != "disabled" ]; then
+                sudo systemctl status "${site}-cert.timer" --no-pager --lines=25 --full
+                echo "${bold}${error}${site}-cert.timer is not disabled.${regular}"
+                return
+            fi
+        fi
+        sudo rm "/etc/systemd/system/${site}-cert.timer"
+    fi
+    if [ -f "/etc/systemd/system/${site}-cert.service" ]; then
+        echo "${bold}uninstall ${site}-cert.service${regular}"
+        sudo rm "/etc/systemd/system/${site}-cert.service"
+    fi
+    if [ -f "/etc/systemd/system/${site}.service" ]; then
+        echo "${bold}uninstall ${site}.service${regular}"
+        if [ $(systemctl is-enabled ${site}.service) = "enabled" ]; then
+            sudo systemctl disable "${site}.service"
+            if [ $(systemctl is-enabled "${site}.service") != "disabled" ]; then
+                sudo systemctl status "${site}.service" --no-pager --lines=25 --full
+                echo "${bold}${error}${site}.service is not disabled.${regular}"
+                return
+            fi
+        fi
+        sudo rm "/etc/systemd/system/${site}.service"
+    fi
+    if [ -f "/etc/nginx/sites-available/${site}.conf" ]; then
+        echo "${bold}uninstall nginx.service${regular}"
+        sudo systemctl stop "nginx.service"
+        sudo rm "/etc/nginx/sites-enabled/${site}.conf"
+        sudo rm "/etc/nginx/sites-available/${site}.conf"
+        sudo ln -f -s "/etc/nginx/sites-available/default" "/etc/nginx/sites-enabled/default"
+        sudo systemctl start "nginx.service"
+        if [ $(systemctl is-active "nginx.service") != "active" ]; then
+            sudo systemctl status ngnix.service --no-pager --lines=25 --full
+            echo "${bold}${error}ngnix.service is not active.${regular}"
+            return
+        fi
+    fi
+}
+
+server_start() {
+    echo "${bold}start ${site}.service${regular}"
+    sudo systemctl start ${site}.service
+    sleep 2
+    sudo systemctl status ${site}.service  --no-pager --lines=1000 --full
+    if [ $(systemctl is-active "${site}.service") != "active" ]; then
+        echo "${bold}${error}${site}.service is not active.${regular}"
+        return
+    fi
+}
+
+server_stop() {
+    if [ $(systemctl is-active "${site}.service") = "active" ]; then
+        echo "${bold}stop ${site}.service${regular}"
+        sudo systemctl stop "${site}.service"
+        if [ $(systemctl is-active "${site}.service") = "active" ]; then
+            sudo systemctl stop "${site}.service"
+            if [ $(systemctl is-active "${site}.service") != "inactive" ]; then
+                sudo systemctl status "${site}.service" --no-pager --lines=25 --full
+                echo "${bold}${error}${site}.service is not inactive.${regular}"
+                return
+            fi
+        fi
+    fi
+}
+
+server_cert() {
+    if [ -z ${domain} ] || [ -z ${email} ]; then
+        echo "${bold}${error}Update 'domain' and 'email' in ${underline}${configuration}${regular}."
+        return
+    fi
+
+    echo "${bold}apt-get install letsencrypt${regular}"
+    sudo apt-get -qq update
+    sudo apt-get -qq install --yes letsencrypt
+
+    server_stop
+    mkdir ./.well-known
+    server_start
+
+    if sudo test -f "/etc/letsencrypt/live/${domain}/fullchain.pem" && sudo test -f "/etc/letsencrypt/live/${domain}/privkey.pem"; then
+        echo "${bold}renew certificate${regular}"
+        sudo letsencrypt renew
+    else
+        echo "${bold}create certificate${regular}"
+        mkdir -p .well-known/acme-challenge
+        sudo letsencrypt certonly --webroot -w $(pwd) -d ${domain} -d www.${domain} --agree-tos --email ${email}
+        rm letsencrypt.log
+    fi
+
+    server_stop
+    rm -R ./.well-known
+    server_start
+
+    echo "${bold}reload nginx.service${regular}"
+    sudo systemctl stop "nginx.service"
+    sudo systemctl start "nginx.service"
+    if [ $(systemctl is-active "nginx.service") != "active" ]; then
+        sudo systemctl status "nginx.service" --no-pager --lines=25 --full
+        echo "${bold}${error}nginx.service is not active.${regular}"
+    fi
+}
+
+server_status() {
+    sudo systemctl status ${site}.service --no-pager --lines=1000 --full
+}
+
+server_pull() {
+    echo "${bold}git fetch -p${regular}"
+    git fetch -p
+    branch=origin/$(git rev-parse --abbrev-ref HEAD)
+    echo "${bold}git reset --hard ${branch}${regular}"
+    git reset --hard ${branch}
+}
+
+server_update() {
+    server_stop
+    server_uninstall
+    server_pull
+    source "${configuration}"
+    server_install
+    server_start
+}
+
+server_test() {
+    server_stop
+    client_test
+}
+
+client_start() {
+    if [ ${1:-${runtime}} = "go" ]; then 
+        sleep 0.5 && git web--browse http://localhost:8080 & GO_ENV=${GO_ENV:-development} go run app.go
+    elif [ ${1:-${runtime}} = "python" ]; then
+        sleep 0.5 && git web--browse http://localhost:8080 & PYTHON_ENV=${PYTHON_ENV:-development} python app.py
+    else
+        sleep 0.5 && git web--browse http://localhost:8080 & NODE_ENV=${NODE_ENV:-development} node app.js
+    fi
+}
+
+client_status() {
+    echo "${bold}ssh ${user}@${server} status${regular}"
+    ssh -i ${identity} ${user}@${server} -tq -o "BatchMode yes" "/var/www/${site}/admin status"
+}
+
+client_update() {
+    client_push
+    echo "${bold}ssh ${user}@${server} update${regular}"
+    ssh -i ${identity} ${user}@${server} -tq -o "BatchMode yes" "/var/www/${site}/admin update" # | sed 's/^/    /'
+}
+
+client_push() {
+    message=$@
+    echo "${bold}git add -v *${regular}"
+    git add -v *
+    if [ -z "${message}" ]; then # if no description is provided amend last commit and push --force
+        echo "${bold}git commit --amend --no-edit${regular}"
+        git commit --amend --no-edit
+        echo "${bold}git push --force${regular}"
+        git push --force
+    else # if description is provided create new commit and push
+        echo "${bold}git commit -m '${message}'${regular}"
+        git commit -m "${message}"
+        echo "${bold}git push${regular}"
+        git push
+    fi
+}
+
+client_test() {
+    output="./test"
+    mkdir -p ${output}
+    echo "${bold}node${regular}"
+    NODE_ENV=production node ./app.js & pid=$!
+    sleep 0.5
+    curl -s http://localhost:8080/ > ${output}/root_node.html
+    curl -s http://localhost:8080/blog/feed.atom > ${output}/feed_node.atom
+    curl -s http://localhost:8080/blog/feed.rss > ${output}/feed_node.rss
+    kill -9 ${pid}
+    wait ${pid} 2>/dev/null
+    echo "${bold}go${regular}"
+    GO_ENV=production go run app.go & pid=$!
+    sleep 0.5
+    curl -s http://localhost:8080/ > ${output}/root_go.html
+    curl -s http://localhost:8080/blog/feed.atom > ${output}/feed_go.atom
+    curl -s http://localhost:8080/blog/feed.rss > ${output}/feed_go.rss
+    kill -9 $(ps -ef | awk '$3 == '${pid}' { print $2 }')
+    kill -9 ${pid}
+    wait ${pid} 2>/dev/null
+    echo "${bold}python${regular}"
+    PYTHON_ENV=production python ./app.py & pid=$!
+    sleep 0.5
+    curl -s http://localhost:8080/ > ${output}/root_python.html
+    curl -s http://localhost:8080/blog/feed.atom > ${output}/feed_python.atom
+    curl -s http://localhost:8080/blog/feed.rss > ${output}/feed_python.rss
+    kill -9 ${pid}
+    wait ${pid} 2>/dev/null
+    echo "${bold}compare${regular}"
+    error_status=0
+    cmp "${output}/root_node.html" "${output}/root_go.html" || error_status=$?
+    cmp "${output}/root_node.html" "${output}/root_python.html" || error_status=$?
+    cmp "${output}/feed_node.atom" "${output}/feed_go.atom" || error_status=$?
+    cmp "${output}/feed_node.atom" "${output}/feed_python.atom" || error_status=$?
+    cmp "${output}/feed_node.rss" "${output}/feed_go.rss" || error_status=$?
+    cmp "${output}/feed_node.rss" "${output}/feed_python.rss" || error_status=$?
+    if [ ${error_status} == 0 ]; then 
+        rm -R ${output}
+    fi
+}
+
+client_console() {
+    ssh -i ${identity} ${user}@${server} -t "cd /var/www/${site} && exec bash -l"
+}
+
+description() {
+    echo
+    echo "  This script automates common tasks to run this website."
+    echo "  It can be configured via ${underline}${configuration}${regular} and provides two sets of commmands,"
+    echo "  one for local development and another for running the website on an"
+    echo "  actual Linux server. Your computer is considered a server if the "
+    echo "  script is located at /var/www/\${site}/."
+    echo
+}
+
+server() {
+    command="$1"
+    shift
+    case "${command}" in
+        "install") server_install;;
+        "uninstall") server_uninstall;;
+        "cert") server_cert;;
+        "pull") server_pull;;
+        "start") server_start;;
+        "stop") server_stop;;
+        "update") server_update;;
+        "status") server_status;;
+        "test") server_test;;
+        *)
+            description;
+            echo "Usage: ${bold}$(basename "$0")${regular} <server-command>"
+            echo
+            echo "    ${bold}install${regular}    Install NGINX and ${bold}${site}.service${regular}"
+            echo "    ${bold}start${regular}      Start service"
+            echo "    ${bold}status${regular}     Print current service status"
+            echo "    ${bold}update${regular}     Run stop, pull, start and status"
+            echo "    ${bold}cert${regular}       Create or renew SSL certificate"
+            echo "    ${bold}pull${regular}       Fetch Git repo and reset master branch"
+            echo "    ${bold}stop${regular}       Stop service"
+            echo "    ${bold}uninstall${regular}  Stop and uninstall service"
+            echo;
+        ;;
+    esac
+}
+
+client() {
+    command="$1"
+    shift
+    case "${command}" in
+        "start") client_start $@;;
+        "push") client_push $@;;
+        "update") client_update $@;;
+        "status") client_status;;
+        "console") client_console;;
+        "test") client_test;;
+        *)
+            description;
+            echo "Usage: ${bold}$(basename "$0")${regular} <client-command>"
+            echo
+            echo "    ${bold}start${regular}      Start web server locally and open web browser"
+            echo "    ${bold}push${regular}       Amend last commit or add new commit, then push changes"
+            echo "    ${bold}update${regular}     Run push command and update server"
+            echo "    ${bold}status${regular}     Show server log"
+            echo "    ${bold}console${regular}    Connect via SSH to server"
+            echo;
+        ;;
+    esac
+}
+
+if [ -d "/var/www/${site}" ]; then 
+    server $@
+else
+    client $@
+fi
+
+popd > /dev/null

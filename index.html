@@ -1,21 +1,42 @@
 <html>
 <head>
-<title>Lutz Roeder</title>
-<meta http-equiv='content-type' content='text/html; charset=utf-8'>
-<meta http-equiv='X-UA-Compatible' content='IE=9'>
-<meta name='description' content='Software Architect at Microsoft working on Visual Studio. Created .NET Reflector. Interested in Artificial Intelligence, Deep Learning, Developer Tools, Photography and Music production.' />
-<meta name='viewport' content='width=device-width, initial-scale=1' />
-<link rel='alternate' type='application/atom+xml' title='Lutz Roeder' href='http://feeds.feedburner.com/lutzroeder' />
-{{ ./link.html }}
-<link rel='stylesheet' type='text/css' href='site.css' />
-<script type='text/javascript'>try { _gat._getTracker("UA-54146-4")._trackPageview(); } catch (e) { }</script>
+<title>{{name}}</title>
+<script>(function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){ (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+ga('create', 'UA-54146-4', 'auto');  ga('send', 'pageview');</script>
+<meta name='description' content='{{description}}' />
+{{>meta.html}}
+<style type='text/css'>
+{{>site.css}}
+</style>
 </head>
 <body>
-{{ ./navigation.html }}
-<div class='content'>
-<h3>Latest</h3>
-{{ blog }}
-</div>
-</div>
+{{>header.html}}
+{{{blog}}}
+<script type='text/javascript'>
+function updateStream() {
+    var element = document.getElementById("stream");
+    if (element) {
+      var rect = element.getBoundingClientRect();
+      var threshold = 0;
+      if (rect.bottom > threshold && (window.innerHeight - rect.top) > threshold) {
+        var url = element.getAttribute("title");
+        var xmlHttp = new XMLHttpRequest();
+        xmlHttp.open("GET", url, true);
+        xmlHttp.onreadystatechange = function () {
+            if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+                element.insertAdjacentHTML('beforebegin', xmlHttp.responseText);
+                element.parentNode.removeChild(element);
+                updateStream();
+            }
+        };
+        xmlHttp.send(null);
+      }
+    }
+}
+updateStream();
+window.addEventListener('scroll', function(e) {
+    updateStream();
+});
+</script>
 </body>
 </html>

@@ -1,0 +1,30 @@
+<div class='header'>
+<div class='profile'>
+<a href='{{/}}'><img class='portrait' src='{{/}}portrait.jpg' /></a>
+<div class='name'><a href='{{/}}'>{{name}}</a></div>
+<div class='bio'>{{{bio}}}</div>
+<div class='links'>
+{{#links}}
+<a class='icon' target='_blank' href='{{{url}}}' title='{{name}}'><span class='symbol'>{{{symbol}}}</span></a>
+{{/links}}
+</div>
+</div>
+<nav class='navigation'>
+<ul class='tabs' id='tabs'>
+{{#pages}}
+<li class='tab'><a href='{{{url}}}'>{{{name}}}</a></li>
+{{/pages}}
+</ul>
+<script type='text/javascript'>
+var path = location.pathname;
+if (path !== "/" && path.endsWith("/")) {
+    path = path.substring(0, path.length - 1);
+}
+var link = document.body.querySelector('#tabs').querySelector('a[href="' + path + '"]');
+if (link != null) {
+    link.className = link.className + ' active';
+}
+</script>
+</nav>
+</div>
+</div>

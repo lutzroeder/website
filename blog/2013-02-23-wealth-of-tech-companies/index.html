@@ -1,0 +1,481 @@
+---
+state:      post
+title:      The Wealth of Tech Companies
+date:       2013-02-24 18:00:00 -08:00
+updated:    2017-03-05 21:36:00 -08:00
+---
+
+<p>Inspired by Hans Rosling's <a href='https://www.ted.com/talks/hans_rosling_reveals_new_insights_on_poverty'>TED</a> talk, this D3.js motion chart shows net income, revenue and market cap of some large tech companies over time.</p>
+
+<style>
+text { fill: #888; }
+svg { font-family: "Merriweather Sans", Arial, sans-serif; font-size: 9px; }
+.element circle { stroke-width: 0.5px; stroke: #444; stroke-opacity: 1; fill-opacity: 0.6; }
+.element text { fill: #000; fill-opacity: 0.2; alignment-baseline: middle; }
+.element:hover circle { stroke-width: 1px; stroke: #000; fill-opacity: 0.8; }
+.element:hover text { fill: #000; fill-opacity: 0.5; }
+.grid { fill: none; stroke: #000; stroke-opacity: 0.04; stroke-width: 0.5px; }
+.origin { stroke: #aaa; stroke-opacity: 0.4; stroke-dasharray: 4 2; stroke-width: 0.75px; }
+.axis path, .axis line { fill: none; stroke: #000; stroke-width: 0.25px; }
+.axis text { font-family: "Merriweather Sans", Arial, sans-serif; font-size: 9px; }
+.selection circle, .selection:hover circle { stroke: #000; stroke-width: 1.5px; fill-opacity: 1; }
+.selection text, .selection:hover text { fill: #000; fill-opacity: 1; }
+</style>
+<svg id='chart' width='600' height='400' />
+<p>
+<select style='margin-left: 35px' id='selector'>
+  <option value='Annual Revenue, Annual Income, Shareholder Equity, Market Capitalization'>Annual Income and Revenue</option>
+  <option value='Market Capitalization, Annual Income, Shareholder Equity, Annual Revenue'>Annual Income and Market Cap</option>
+  <option value='Market Capitalization, Shareholder Equity, Annual Income, Annual Revenue'>Shareholder Equity and Market Cap</option>
+<select>
+</p>
+<script type='text/javascript' src='https://d3js.org/d3.v4.min.js'></script>
+<script>
+function MotionChart(element) {
+    this._selection = {};
+    this._radiusScale = d3.scaleSqrt();
+    this._element = d3.select(element);
+    this.reset();
+};
+MotionChart.prototype.reset = function () {
+    this.stopTransition();
+    this._element.selectAll("*").remove();
+    this._margin = { top: 20, right: 20, bottom: 80, left: 40 };
+    var width = parseFloat(this._element.attr("width"));
+    var height = parseFloat(this._element.attr("height"));
+    this._width = width - this._margin.right - this._margin.left;
+    this._height = height - this._margin.top - this._margin.bottom;
+    this.scale(d3.scaleLinear(), d3.scaleLinear(), null);
+};
+MotionChart.prototype.data = function(dataSource, label, x, y, radius, color) {
+    this._dataSource = JSON.parse(JSON.stringify(dataSource));
+    this._labelData = label;
+    this._xData = x;
+    this._yData = y;
+    this._radiusData = radius;
+    this._colorData = color;
+}
+MotionChart.prototype.time = function(start, end) {
+    this._startTime = start;
+    this._endTime = end;
+}
+MotionChart.prototype.scale = function(x, y, color) {
+    this._xScale = x;
+    this._xAxis = d3.axisBottom().scale(this._xScale);
+    this._yScale = y;
+    this._yAxis = d3.axisLeft().scale(this._yScale);
+    if (color) {
+        this._colorScale = color;
+    }
+};
+MotionChart.prototype.select = function (label) {
+    this._selection[label] = true;
+};
+MotionChart.prototype.startTransition = function () {
+    if (!this._diagram) {
+        this.draw();
+    }
+    this._timeSliderPlayButton.style("display", "none");
+    this._timeSliderHead.style("display", "block");
+    var startTime = this._startTime.getTime();
+    var endTime = this._endTime.getTime();
+    var currentTime = this._currentTime.getTime();
+    var duration = ((endTime - currentTime) * 20000) / (endTime - startTime);
+    var timeInterpolator = d3.interpolate(this._currentTime, this._endTime);
+    var self = this;
+    this._diagram.transition()
+        .duration(duration)
+        .ease(d3.easeLinear)
+        .tween("date", function () {
+            return function (t) {
+                self.update(new Date(timeInterpolator(t)));
+            };
+        })
+        .on("end", function () { 
+            self.stopTransition(); 
+        });
+};
+MotionChart.prototype.stopTransition = function () {
+    if (this._diagram) {
+        this._diagram.transition().duration(0);
+    }
+};
+MotionChart.prototype.draw = function () {
+    this.createScales();
+    this.createColorAxis();
+    this.createRadiusAxis();
+    this.createTimeSlider();
+    this._diagram = this._element.append("g").attr("transform", "translate(" + this._margin.left + "," + this._margin.top + ")");
+    this.createRules();
+    this.createItems();
+};
+MotionChart.prototype.createScales = function () {
+    var maxRadius = 20;
+    var maxLabelWidth = 40;
+    var xDomain = this.computeDomain(this._xData);
+    var yDomain = this.computeDomain(this._yData);
+    this._radiusDomain = this.computeDomain(this._radiusData);
+    this._colorDomain = this.computeDomain(this._colorData);
+    this.computeTimeDomain();
+    var xScale = this._xScale.domain(xDomain).range([1.5 * maxRadius, this._width - (1.5 * maxRadius) - maxLabelWidth]);
+    this._xScale = this._xScale.domain([xScale.invert(0), xScale.invert(this._width)]).range([0, this._width]).clamp(true);
+    var yScale = this._yScale.domain(yDomain).range([1.5 * maxRadius, this._height - (1.5 * maxRadius)]);
+    this._yScale = this._yScale.domain([yScale.invert(0), yScale.invert(this._height)]).range([this._height, 0]).clamp(true);
+    this._radiusScale = this._radiusScale.domain([0, this._radiusDomain[1]]).range([2, maxRadius]).clamp(true);
+    if (this._colorDomain) {
+        var gradient = [
+            { "stop": 0.0, "color": "#3e53ff" },
+            { "stop": 0.33, "color": "#2ff076" },
+            { "stop": 0.5, "color": "#d0ff2f" },
+            { "stop": 0.66, "color": "#ffff2f" },
+            { "stop": 1.0, "color": "#ff2f2f" }
+        ];
+        var linearGradient = this._element.append("defs").append("linearGradient").attr("id", "colorGradient").attr("x2", "1");
+        gradient.forEach(function (d) { linearGradient.append("stop").attr("offset", d["stop"]).attr("stop-color", d["color"]); });
+        var gradientStops = gradient.map(function (d) { return d["stop"]; });
+        var gradientColors = gradient.map(function (d) { return d["color"]; });
+        this._colorScale = d3.scaleLinear().domain(gradientStops.map(d3.scaleLinear().domain(this._colorDomain).invert)).range(gradientColors);
+    }
+    if (!this._colorScale) {
+        this._colorScale = d3.scale.category10();
+    }
+};
+MotionChart.prototype.createRules = function () {
+    var rules = this._diagram.append("g").classed("rules", true);
+    // x & y axis
+    rules.append("g")
+        .classed("axis", true)
+        .attr("transform", "translate(0," + this._height + ")")
+        .call(this._xAxis.tickSize(2, 0, 2));
+    rules.append("g").classed("axis", true)
+        .call(this._yAxis.tickSize(2, 0, 2));
+    // grid lines
+    rules.append("g").classed("grid", true).attr("transform", "translate(0," + this._height + ")")
+        .call(this._xAxis.tickSize(-this._height, 0, -this._height).tickFormat(function (value) { return ""; }));
+    rules.append("g").classed("grid", true)
+        .call(this._yAxis.tickSize(-this._width, 0, -this._width).tickFormat(function (value) { return ""; }));
+    rules.selectAll(".grid line")
+        .filter(function (d) { return d == 0; })
+        .classed("origin", true);
+    // add axis labels
+    rules.append("text").attr("text-anchor", "end").attr("x", this._width - 3).attr("y", this._height - 6).text(this._xData);
+    rules.append("text").attr("text-anchor", "end").attr("x", "-3").attr("y", 11).attr("transform", "rotate(-90)").text(this._yData);
+};
+MotionChart.prototype.createColorAxis = function () {
+    if (this._colorDomain) {
+        var w = this._width * 0.25;
+        var x = this._margin.left;
+        var y = Number(this._element.attr("height")) - 30;
+        var colorScale = d3.scaleLinear().domain(this._colorDomain).range([0, w]);
+        var colorTicks = [0, 0.5, 1].map(d3.scaleLinear().domain(this._colorDomain).invert);
+        var colorAxis = d3.axisBottom().scale(colorScale).tickSize(2, 0, 2).tickValues(colorTicks);
+        var g = this._element.append("g").attr("transform", "translate(" + x + "," + y + ")");
+        g.append("g").classed("axis", true).attr("transform", "translate(0,9)").call(colorAxis);
+        g.append("rect").attr("y", -3).attr("width", w).attr("height", 10).style("fill", "url(#colorGradient)");
+        g.append("text").attr("text-anchor", "start").attr("dy", -8).text(this._colorData);
+    }
+};
+MotionChart.prototype.createRadiusAxis = function () {
+    var w = this._width * 0.25;
+    var x = this._margin.left + ((this._colorDomain) ? (0.32 * this._width) : 0);
+    var y = Number(this._element.attr("height")) - 30;
+    var radiusScale = d3.scaleLinear().domain([0, this._radiusDomain[1]]).range([0, w]);
+    var radiusTicks = [0, 0.5, 1].map(d3.scaleLinear().domain([0, this._radiusDomain[1]]).invert);
+    var radiusAxis = d3.axisBottom().scale(radiusScale).tickSize(2, 0, 2).tickValues(radiusTicks);
+    var g = this._element.append("g").attr("transform", "translate(" + x + "," + y + ")");
+    g.append("g").classed("axis", true).attr("transform", "translate(0,9)").call(radiusAxis);
+    for (var i = 0; i < 5; i++) {
+        g.append("circle").attr("cx", (i * w) / 4).attr("cy", 2).attr("r", i + 1).style("fill", "#888");
+    }
+    g.append("text").attr("text-anchor", "start").attr("dy", -8).text(this._radiusData);
+};
+MotionChart.prototype.createTimeSlider = function () {
+    var width = parseFloat(this._element.attr("width"));
+    var w = this._width * (this._colorDomain ? 0.32 : 0.64);
+    var x = width - this._margin.right - w;
+    var y = Number(this._element.attr("height")) - 30;
+    this._timeScale = d3.scaleTime().domain([this._startTime, this._endTime]).range([0, w]).clamp(true);
+    ;
+    var ticks = this._colorDomain ? [0, 0.25, 0.5, 0.75, 1] : [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+    ticks = ticks.map(d3.scaleLinear().domain([this._startTime, this._endTime]).invert);
+    var timeTicks = [];
+    for (var i = 0; i < ticks.length; i++) {
+        timeTicks[i] = new Date(ticks[i]);
+    }
+    var timeAxis = d3.axisBottom().scale(this._timeScale)
+        .tickSize(11, 0, 11)
+        .tickValues(timeTicks)
+        .tickFormat(function (value) { return value.getFullYear(); });
+    var g = this._element.append("g").attr("transform", "translate(" + x + "," + y + ")");
+    var self = this;
+    g.append("g").classed("axis", true).call(timeAxis);
+    var rect = function () { return g.append("rect").attr("rx", 2).attr("ry", 2).attr("y", -1).attr("x", -3).attr("height", 6); };
+    rect().attr("width", w + 6).style("fill", "#fff");
+    this._timeSlider = rect().style("fill", "#ddd");
+    rect().attr("width", w + 6).style("fill", "none").style("stroke", "#888");
+    this._timeSliderPosition = g.append("g");
+    this._timeSliderPosition.append("line").attr("y2", -8).style("stroke", "#888");
+    this._timeSliderPosition.append("text").attr("y", -10).attr("text-anchor", "middle");
+    this._timeSliderHead = g.append("g").attr("pointer-events", "all").attr("cursor", "ew-resize");
+    this._timeSliderHead.append("circle").attr("cy", 2).attr("r", 4).style("fill", "none").style("stroke", "#888").style("stroke-width", "5.5px");
+    this._timeSliderHead.append("circle").attr("cy", 2).attr("r", 20).style("fill", "none").style("opacity", 1);
+    this._timeSliderHead.style("display", "none");
+    this._timeSliderHead.call(d3.drag()
+        .on("start", function () {
+        self._timeSliderDragged = false;
+    })
+        .on("drag", function () {
+        self._timeSliderDragged = true;
+        self.stopTransition();
+        var date = self._timeScale.invert(d3.event.x);
+        self.update(date);
+    })
+        .on("end", function () {
+        if (self._timeSliderDragged && (self._endTime.getTime() - self._currentTime.getTime()) > 0) {
+            self._timeSliderPlayButton.style("display", "block");
+            self._timeSliderHead.style("display", "none");
+        }
+    }));
+    this._timeSliderPlayButton = g.append("g").attr("transform", "translate(0,2)").attr("pointer-events", "all").attr("cursor", "pointer");
+    this._timeSliderPlayButton.append("circle").attr("cy", 0).attr("r", 6).style("fill", "#fff").style("stroke", "#888");
+    this._timeSliderPlayButton.append("circle").attr("cy", 0).attr("r", 20).style("fill", "none").style("opacity", 1);
+    this._timeSliderPlayButton.append("polygon").attr("points", "-2,-3 -2,3 4,0").style("fill", "#888");
+    this._timeSliderPlayButton
+        .on("click", function () {
+        self.startTransition();
+    });
+};
+MotionChart.prototype.updateTimeSlider = function (date) {
+    var x = this._timeScale(date);
+    this._timeSlider.attr("width", x + 6);
+    this._timeSliderHead.attr("transform", "translate(" + x + ",0)");
+    this._timeSliderPosition.attr("transform", "translate(" + x + ",0)");
+    this._timeSliderPosition.selectAll("text").text(date.getFullYear());
+    this._timeSliderPlayButton.attr("transform", "translate(" + x + ",2)");
+    if ((this._endTime.getTime() - date.getTime()) <= 0) {
+        this._timeSliderHead.style("display", "block");
+        this._timeSliderPlayButton.style("display", "none");
+    }
+};
+MotionChart.prototype.createItems = function () {
+    var self = this;
+    this._items = this._diagram.append("g").selectAll(".item")
+        .data(this._dataSource)
+        .enter()
+        .append("g")
+        .classed("element", true)
+        .each(function (item) {
+            var label = item[self._labelData];
+            var g = d3.select(this);
+            g.classed("selection", self._selection[label]);
+            g.append("text").classed("label", true).attr("y", 1).text(label);
+            g.append("circle");
+        })
+        .on("click", function () {
+            d3.select(this).classed("selection", !d3.select(this).classed("selection"));
+        });
+    this.update(this._startTime);
+};
+MotionChart.prototype.computeDomain = function (axis) {
+    var self = this;
+    var hasValue = true;
+    self._dataSource.forEach(function (item) {
+        if (!(item[axis] instanceof Array) || (typeof item[axis] == "number")) {
+            console.log("UGH");
+        }
+        hasValue = hasValue && (item[axis] instanceof Array) || (typeof item[axis] == "number");
+    });
+    if (!hasValue) {
+        return null;
+    }
+    var min = d3.min(this._dataSource, function (item) { return (typeof item[axis] == "number") ? item[axis] : d3.min(item[axis], function (pair) { return pair[1]; }); });
+    var max = d3.max(this._dataSource, function (item) { return (typeof item[axis] == "number") ? item[axis] : d3.max(item[axis], function (pair) { return pair[1]; }); });
+    self._dataSource.forEach(function (item) {
+        // Convert time series into a multi-value D3 scale and cache time range.
+        if (item[axis] instanceof Array) {
+            var dates = item[axis].map(function (d) { return d[0]; }).map(function (date) { return self.createDate(date); });
+            var values = item[axis].map(function (d) { return d[1]; });
+            if (self._endTime && dates[dates.length - 1] < self._endTime) {
+                dates.push(self._endTime);
+                values.push(values[values.length - 1]);
+            }
+            item[axis] = d3.scaleTime().domain(dates).range(values);
+            item[axis]["__min"] = dates[0];
+            item[axis]["__max"] = dates[dates.length - 1];
+        }
+    });
+    return [min, max];
+};
+MotionChart.prototype.createDate = function (date) {
+    if (typeof date == "number") {
+        return new Date(date, 0, 1);
+    }
+    if (typeof date == "string") {
+        return new Date(date);
+    }
+    return date;
+};
+MotionChart.prototype.computeTimeDomain = function () {
+    var self = this;
+    var startTime = this._startTime;
+    var endTime = this._endTime;
+    var axes = [self._xData, self._yData, self._radiusData, self._colorData];
+    axes.forEach(function (axis) {
+        self._dataSource.forEach(function (item) {
+            var data = item[axis];
+            if (!(typeof data == "number") && !(typeof data == "string")) {
+                data.domain().forEach(function (value) {
+                    if (!self._startTime && (!startTime || startTime > value)) {
+                        startTime = value;
+                    }
+                    if (!self._endTime && (!endTime || endTime < value)) {
+                        endTime = value;
+                    }
+                });
+            }
+        });
+    });
+    this._startTime = startTime;
+    this._endTime = endTime;
+};
+MotionChart.prototype.hasValue = function (item, axis, date) {
+    var data = item[axis];
+    if ((typeof data == "number") || (typeof data == "string")) {
+        return true;
+    }
+    return (date >= data["__min"] && date <= data["__max"]);
+};
+MotionChart.prototype.computeValue = function (item, axis, date) {
+    var data = item[axis];
+    if (!!data && data.constructor && data.call && data.apply) {
+        return data(date);
+    }
+    return data;
+};
+MotionChart.prototype.update = function (date) {
+    this._currentTime = date;
+    this.updateTimeSlider(date);
+    var self = this;
+    this._items.each(function (data) {
+        if (self.hasValue(data, self._xData, date) &&
+            self.hasValue(data, self._yData, date) &&
+            self.hasValue(data, self._radiusData, date)) {
+            var x = self._xScale(self.computeValue(data, self._xData, date));
+            var y = self._yScale(self.computeValue(data, self._yData, date));
+            var r = self.computeValue(data, self._radiusData, date);
+            var radius = self._radiusScale((r < 0) ? 0 : r);
+            var color = self.hasValue(data, self._colorData, date) ? self._colorScale(self.computeValue(data, self._colorData, date)) : "#fff";
+            var textPosition = 1 + (1.1 * radius);
+            d3.select(this).style("display", "block");
+            d3.select(this).attr("transform", "translate(" + x + "," + y + ")");
+            d3.select(this).selectAll("circle").attr("r", radius).style("fill", color);
+            d3.select(this).selectAll("text").attr("transform", "translate(" + textPosition + ",0)");
+        }
+        else {
+            d3.select(this).style("display", "none");
+        }
+    });
+    this._items.sort(function (a, b) {
+        return b[self._radiusData] - a[self._radiusData];
+    });
+};
+var data = 
+[
+	{
+		"Name": "Apple",
+		"Annual Revenue": [["2002/9/30",5.742],["2003/9/30",6.207],["2004/9/30",8.279],["2005/9/30",13.931],["2006/9/30",19.315],["2007/9/30",24.006],["2008/9/30",37.491],["2009/9/30",42.905],["2010/9/30",65.225],["2011/9/30",108.249],["2012/9/30",156.508],["2013/9/30",170.91],["2014/9/30",182.795],["2015/9/30",233.715]],
+		"Annual Income": [["2002/9/30",0.065],["2003/9/30",0.069],["2004/9/30",0.266],["2005/9/30",1.328],["2006/9/30",1.989],["2007/9/30",3.496],["2008/9/30",6.119],["2009/9/30",8.235],["2010/9/30",14.013],["2011/9/30",25.922],["2012/9/30",41.733],["2013/9/30",37.037],["2014/9/30",39.51],["2015/9/30",53.394]],
+		"Shareholder Equity": [["2001/12/31",3.966],["2002/3/31",4.014],["2002/6/30",4.066],["2002/9/30",4.095],["2002/12/31",4.116],["2003/3/31",4.139],["2003/6/30",4.198],["2003/9/30",4.223],["2003/12/31",4.33],["2004/3/31",4.49],["2004/6/30",4.812],["2004/9/30",5.076],["2004/12/31",5.79],["2005/3/31",6.386],["2005/6/30",6.821],["2005/9/30",7.428],["2005/12/31",8.38],["2006/3/31",8.682],["2006/6/30",9.33],["2006/9/30",9.984],["2006/12/31",11.228],["2007/3/31",12.261],["2007/6/30",13.404],["2007/9/30",14.532],["2007/12/31",16.804],["2008/3/31",18.053],["2008/6/30",19.622],["2008/9/30",22.297],["2008/12/31",22.909],["2009/3/31",24.311],["2009/6/30",25.888],["2009/9/30",31.64],["2009/12/31",35.768],["2010/3/31",39.348],["2010/6/30",43.111],["2010/9/30",47.791],["2010/12/31",54.666],["2011/3/31",61.477],["2011/6/30",69.343],["2011/9/30",76.615],["2011/12/31",90.054],["2012/3/31",102.498],["2012/6/30",111.746],["2012/9/30",118.21],["2012/12/31",127.346],["2013/3/31",135.49],["2013/6/30",123.354],["2013/9/30",123.549],["2013/12/31",129.684],["2014/3/31",120.179],["2014/6/30",120.94],["2014/9/30",111.547],["2014/12/31",123.328],["2015/3/31",129.006],["2015/6/30",125.677],["2015/9/30",119.355],["2015/12/31",128.267]],
+		"Market Capitalization": [["2001/12/31",7.71886],["2002/01/31",8.71279],["2002/02/28",7.66841],["2002/03/28",8.36457],["2002/04/30",8.59364],["2002/05/31",8.28782],["2002/06/28",6.30301],["2002/07/31",5.4766],["2002/08/30",5.29356],["2002/09/30",5.2049],["2002/10/31",5.76847],["2002/11/29",5.56386],["2002/12/31",5.16248],["2003/01/31",5.17647],["2003/02/28",5.41078],["2003/03/31",5.16881],["2003/04/30",5.19805],["2003/05/30",6.56273],["2003/06/30",6.99488],["2003/07/31",7.7362],["2003/08/29",8.19615],["2003/09/30",7.59857],["2003/10/31",8.39437],["2003/11/28",7.66825],["2003/12/31",7.88042],["2004/01/30",8.34112],["2004/02/27",8.84394],["2004/03/31",10.08201],["2004/04/30",9.79749],["2004/05/28",10.66399],["2004/06/30",12.53416],["2004/07/30",12.5455],["2004/08/31",13.37953],["2004/09/30",15.16844],["2004/10/29",20.51164],["2004/11/30",26.95798],["2004/12/31",26.05296],["2005/01/31",31.42026],["2005/02/28",36.65833],["2005/03/31",34.30011],["2005/04/29",29.71106],["2005/05/31",32.75904],["2005/06/30",30.47798],["2005/07/29",35.39222],["2005/08/31",38.91069],["2005/09/30",44.76539],["2005/10/31",48.08877],["2005/11/30",57.15652],["2005/12/30",60.58659],["2006/01/31",64.07872],["2006/02/28",58.12146],["2006/03/31",53.26108],["2006/04/28",59.86727],["2006/05/31",50.83487],["2006/06/30",48.8506],["2006/07/31",57.96904],["2006/08/31",57.87521],["2006/09/29",65.66299],["2006/10/31",69.34469],["2006/11/30",78.39337],["2006/12/29",72.90079],["2007/01/31",73.88854],["2007/02/28",72.92324],["2007/03/30",80.0768],["2007/04/30",86.32181],["2007/05/31",104.82392],["2007/06/29",105.55826],["2007/07/31",114.58389],["2007/08/31",120.42788],["2007/09/28",133.4638],["2007/10/31",165.69889],["2007/11/30",159.54095],["2007/12/31",174.03881],["2008/01/31",118.96461],["2008/02/29",109.87704],["2008/03/31",126.48535],["2008/04/30",153.35827],["2008/05/30",166.40629],["2008/06/30",148.30942],["2008/07/31",140.80994],["2008/08/29",150.1825],["2008/09/30",100.68863],["2008/10/31",95.64053],["2008/11/28",82.37762],["2008/12/31",75.99691],["2009/01/30",80.26561],["2009/02/27",79.53535],["2009/03/31",93.61501],["2009/04/30",112.25418],["2009/05/29",121.15744],["2009/06/30",127.57957],["2009/07/31",146.3675],["2009/08/31",150.68534],["2009/09/30",166.77896],["2009/10/30",169.77789],["2009/11/30",180.05463],["2009/12/31",190.98265],["2010/01/29",174.16169],["2010/02/26",185.54831],["2010/03/31",213.76442],["2010/04/30",237.57581],["2010/05/28",233.74497],["2010/06/30",229.76821],["2010/07/30",235.01405],["2010/08/31",222.08713],["2010/09/30",259.9065],["2010/10/29",276.0911],["2010/11/30",285.4201],["2010/12/31",297.0892],["2011/01/31",312.60806],["2011/02/28",325.4046],["2011/03/31",322.25586],["2011/04/29",323.78431],["2011/05/31",321.65738],["2011/06/30",311.13381],["2011/07/29",362.01046],["2011/08/31",356.77238],["2011/09/30",354.35191],["2011/10/31",376.20617],["2011/11/30",355.22012],["2011/12/30",377.51885],["2012/01/31",425.60827],["2012/02/29",505.75479],["2012/03/30",559.00243],["2012/04/30",546.05749],["2012/05/31",540.21335],["2012/06/29",546.07621],["2012/07/31",572.5301],["2012/08/31",623.59997],["2012/09/28",625.34821],["2012/10/31",560.01277],["2012/11/30",550.56824],["2012/12/31",499.69599],["2013/01/31",427.73153],["2013/02/28",414.5002],["2013/03/28",415.68342],["2013/04/30",415.61501],["2013/05/31",422.1433],["2013/06/28",372.20249],["2013/07/31",411.12215],["2013/08/30",442.63428],["2013/09/30",428.6998],["2013/10/31",470.29488],["2013/11/29",500.31732],["2013/12/31",500.74064],["2014/01/31",446.5297],["2014/02/28",469.40029],["2014/03/31",462.53301],["2014/04/30",508.29231],["2014/05/30",545.25417],["2014/06/30",556.57366],["2014/07/31",572.44009],["2014/08/29",613.75637],["2014/09/30",591.01572],["2014/10/31",633.40272],["2014/11/28",697.50542],["2014/12/31",643.12013],["2015/01/30",682.42748],["2015/02/27",748.24713],["2015/03/31",717.00025],["2015/04/30",720.9929],["2015/05/29",750.54699],["2015/06/30",715.5998],["2015/07/31",691.74018],["2015/08/31",643.03893],["2015/09/30",615.33646],["2015/10/30",666.25205],["2015/11/30",659.56166],["2015/12/31",583.6127]]
+	},{
+		"Name": "Google",
+		"Annual Revenue": [["2001/12/31",0.08643],["2002/12/31",0.43951],["2003/12/31",1.46593],["2004/12/31",3.18922],["2005/12/31",6.13856],["2006/12/31",10.60492],["2007/12/31",16.59399],["2008/12/31",21.79555],["2009/12/31",23.651],["2010/12/31",29.321],["2011/12/31",37.905],["2012/12/31",46.039],["2013/12/31",55.519],["2014/12/31",66.001],["2015/12/31",74.989]],
+		"Annual Income": [["2001/12/31",0.00698],["2002/12/31",0.09966],["2003/12/31",0.10565],["2004/12/31",0.39912],["2005/12/31",1.4654],["2006/12/31",3.07745],["2007/12/31",4.20372],["2008/12/31",4.22686],["2009/12/31",6.52],["2010/12/31",8.505],["2011/12/31",9.737],["2012/12/31",10.737],["2013/12/31",12.92],["2014/12/31",14.444],["2015/12/31",16.348]],
+		"Shareholder Equity": [["2004/6/30",1.017],["2004/9/30",2.58902],["2004/12/31",2.92906],["2005/3/31",3.42686],["2005/6/30",3.95386],["2005/9/30",8.79307],["2005/12/31",9.41896],["2006/3/31",10.24327],["2006/6/30",13.35701],["2006/9/30",14.39709],["2006/12/31",17.03984],["2007/3/31",18.37721],["2007/6/30",19.65961],["2007/9/30",21.03677],["2007/12/31",22.68968],["2008/3/31",24.33753],["2008/6/30",25.91301],["2008/9/30",27.47486],["2008/12/31",28.23886],["2009/3/31",29.8481],["2009/6/30",31.59486],["2009/9/30",33.72175],["2009/12/31",36.004],["2010/3/31",38.283],["2010/6/30",40.613],["2010/9/30",43.29],["2010/12/31",46.241],["2011/3/31",48.851],["2011/6/30",51.991],["2011/9/30",54.83],["2011/12/31",58.145],["2012/3/31",61.712],["2012/6/30",64.721],["2012/9/30",68.028],["2012/12/31",71.715],["2013/3/31",75.473],["2013/6/30",78.852],["2013/9/30",82.989],["2013/12/31",87.309],["2014/3/31",91.711],["2014/6/30",95.749],["2014/9/30",98.815],["2014/12/31",104.5],["2015/3/31",108.448],["2015/6/30",111.783],["2015/9/30",116.241],["2015/12/31",120.331]],
+		"Market Capitalization": [["2004/11/30",24.85404],["2004/12/31",26.33042],["2005/01/31",26.71693],["2005/02/28",25.67486],["2005/03/31",25.00792],["2005/04/29",30.47888],["2005/05/31",38.47231],["2005/06/30",40.81448],["2005/07/29",39.92785],["2005/08/31",39.89327],["2005/09/30",44.14205],["2005/10/31",54.93941],["2005/11/30",59.77765],["2005/12/30",61.24621],["2006/01/31",57.13321],["2006/02/28",53.83991],["2006/03/31",57.90515],["2006/04/28",62.05354],["2006/05/31",56.29207],["2006/06/30",63.4849],["2006/07/31",58.77596],["2006/08/31",57.54905],["2006/09/29",61.10206],["2006/10/31",72.85449],["2006/11/30",74.14216],["2006/12/29",70.42137],["2007/01/31",76.69457],["2007/02/28",69.81222],["2007/03/30",71.16512],["2007/04/30",73.35756],["2007/05/31",77.48608],["2007/06/29",81.34413],["2007/07/31",79.51743],["2007/08/31",80.33599],["2007/09/28",88.44677],["2007/10/31",110.48206],["2007/11/30",108.2943],["2007/12/31",108.05676],["2008/01/31",88.33427],["2008/02/29",73.75747],["2008/03/31",69.10728],["2008/04/30",90.10288],["2008/05/30",91.90874],["2008/06/30",82.68533],["2008/07/31",74.4124],["2008/08/29",72.76944],["2008/09/30",62.97165],["2008/10/31",56.50028],["2008/11/28",46.06056],["2008/12/31",48.37019],["2009/01/30",53.22529],["2009/02/27",53.23148],["2009/03/31",54.81745],["2009/04/30",62.49069],["2009/05/29",65.84587],["2009/06/30",66.63603],["2009/07/31",70.06057],["2009/08/31",73.005],["2009/09/30",78.50005],["2009/10/30",84.96517],["2009/11/30",92.39479],["2009/12/31",98.41079],["2010/01/29",84.17405],["2010/02/26",83.67467],["2010/03/31",90.16241],["2010/04/30",83.63235],["2010/05/28",77.25844],["2010/06/30",70.81482],["2010/07/30",77.18754],["2010/08/31",71.64264],["2010/09/30",83.84378],["2010/10/29",98.028],["2010/11/30",88.7651],["2010/12/31",95.32921],["2011/01/31",96.42107],["2011/02/28",98.51537],["2011/03/31",94.41414],["2011/04/29",87.54983],["2011/05/31",85.15633],["2011/06/30",81.61723],["2011/07/29",97.36771],["2011/08/31",87.25014],["2011/09/30",83.29319],["2011/10/31",95.88143],["2011/11/30",96.9735],["2011/12/30",104.49821],["2012/01/31",94.21613],["2012/02/29",100.41048],["2012/03/30",104.39084],["2012/04/30",98.50269],["2012/05/31",94.59581],["2012/06/29",94.46716],["2012/07/31",103.40095],["2012/08/31",111.91519],["2012/09/28",123.25389],["2012/10/31",111.66272],["2012/11/30",114.62909],["2012/12/31",116.5973],["2013/01/31",124.44102],["2013/02/28",131.93525],["2013/03/28",130.78056],["2013/04/30",136.64976],["2013/05/31",144.38038],["2013/06/28",145.89707],["2013/07/31",147.67659],["2013/08/30",140.88122],["2013/09/30",146.20407],["2013/10/31",171.98525],["2013/11/29",176.8265],["2013/12/31",188.00297],["2014/01/31",198.2409],["2014/02/28",204.06238],["2014/03/31",188.18159],["2014/04/30",361.26844],["2014/05/30",386.10361],["2014/06/30",395.72377],["2014/07/31",392.54104],["2014/08/29",394.44431],["2014/09/30",399.65296],["2014/10/31",385.75244],["2014/11/28",372.98845],["2014/12/31",361.43592],["2015/01/30",366.37145],["2015/02/27",383.46492],["2015/03/31",379.00865],["2015/04/30",375.0005],["2015/05/29",372.64295],["2015/06/30",370.19202],["2015/07/31",450.73939],["2015/08/31",444.10341],["2015/09/30",439.00258],["2015/10/30",507.12169],["2015/11/30",524.63117],["2015/12/31",535.05708]]
+	},{
+		"Name": "Microsoft",
+		"Annual Revenue": [["2002/6/30",28.365],["2003/6/30",32.187],["2004/6/30",36.835],["2005/6/30",39.788],["2006/6/30",44.282],["2007/6/30",51.122],["2008/6/30",60.42],["2009/6/30",58.437],["2010/6/30",62.484],["2011/6/30",69.943],["2012/6/30",73.723],["2013/6/30",77.849],["2014/6/30",86.833],["2015/6/30",93.58]],
+		"Annual Income": [["2002/6/30",7.829],["2003/6/30",7.531],["2004/6/30",8.168],["2005/6/30",12.254],["2006/6/30",12.599],["2007/6/30",14.065],["2008/6/30",17.681],["2009/6/30",14.569],["2010/6/30",18.76],["2011/6/30",23.15],["2012/6/30",16.978],["2013/6/30",21.863],["2014/6/30",22.074],["2015/6/30",12.193]],
+		"Shareholder Equity": [["2001/12/31",51.548],["2002/3/31",54.3],["2002/6/30",52.18],["2002/9/30",53.516],["2002/12/31",55.812],["2003/3/31",58.282],["2003/6/30",64.912],["2003/9/30",66.68],["2003/12/31",69.343],["2004/3/31",70.58],["2004/6/30",74.825],["2004/9/30",75.946],["2004/12/31",47.232],["2005/3/31",47.373],["2005/6/30",48.115],["2005/9/30",48.327],["2005/12/31",44.208],["2006/3/31",42.038],["2006/6/30",40.104],["2006/9/30",36.101],["2006/12/31",36.634],["2007/3/31",34.973],["2007/6/30",31.097],["2007/9/30",32.135],["2007/12/31",34.431],["2008/3/31",37.554],["2008/6/30",36.286],["2008/9/30",33.594],["2008/12/31",34.478],["2009/3/31",36.943],["2009/6/30",39.558],["2009/9/30",41.212],["2009/12/31",44.283],["2010/3/31",45.71],["2010/6/30",46.175],["2010/9/30",46.942],["2010/12/31",48.481],["2011/3/31",53.452],["2011/6/30",57.083],["2011/9/30",59.391],["2011/12/31",64.121],["2012/3/31",68.659],["2012/6/30",66.363],["2012/9/30",68.836],["2012/12/31",72.576],["2013/3/31",76.688],["2013/6/30",78.944],["2013/9/30",81.641],["2013/12/31",85.1],["2014/3/31",87.424],["2014/6/30",89.784],["2014/9/30",90.17],["2014/12/31",91.879],["2015/3/31",90.132],["2015/6/30",80.083],["2015/9/30",77.445],["2015/12/31",76.78]],
+		"Market Capitalization": [["2001/12/31",357.94875],["2002/01/31",345.00378],["2002/02/28",315.92404],["2002/03/28",326.59203],["2002/04/30",283.01208],["2002/05/31",275.70121],["2002/06/28",296.22581],["2002/07/31",258.07227],["2002/08/30",263.9889],["2002/09/30",233.85372],["2002/10/31",285.87467],["2002/11/29",308.38323],["2002/12/31",276.63081],["2003/01/31",253.94387],["2003/02/28",253.62283],["2003/03/31",259.57962],["2003/04/30",274.41883],["2003/05/30",264.21939],["2003/06/30",276.16844],["2003/07/31",284.46211],["2003/08/29",286.78688],["2003/09/30",300.379],["2003/10/31",282.63794],["2003/11/28",277.98858],["2003/12/31",295.29493],["2004/01/30",298.31585],["2004/02/27",286.37524],["2004/03/31",268.67061],["2004/04/30",282.06532],["2004/05/28",283.14479],["2004/06/30",310.21872],["2004/07/30",309.45838],["2004/08/31",296.82484],["2004/09/30",300.41725],["2004/10/29",303.89405],["2004/11/30",291.46733],["2004/12/31",290.71954],["2005/01/31",285.93224],["2005/02/28",273.74639],["2005/03/31",261.14122],["2005/04/29",273.35014],["2005/05/31",278.75231],["2005/06/30",266.0364],["2005/07/29",274.2831],["2005/08/31",293.31389],["2005/09/30",273.88747],["2005/10/31",273.56813],["2005/11/30",294.64458],["2005/12/30",278.35823],["2006/01/31",290.88434],["2006/02/28",277.65762],["2006/03/31",278.22225],["2006/04/28",246.35905],["2006/05/31",231.05725],["2006/06/30",234.4446],["2006/07/31",242.09172],["2006/08/31",256.22879],["2006/09/29",272.67928],["2006/10/31",282.23251],["2006/11/30",288.62231],["2006/12/29",293.53754],["2007/01/31",302.19082],["2007/02/28",275.8495],["2007/03/30",272.9118],["2007/04/30",286.43024],["2007/05/31",293.60631],["2007/06/29",281.93384],["2007/07/31",271.79553],["2007/08/31",269.3579],["2007/09/28",276.20201],["2007/10/31",344.37371],["2007/11/30",314.34275],["2007/12/31",332.1124],["2008/01/31",303.40754],["2008/02/29",253.14985],["2008/03/31",264.31125],["2008/04/30",265.61511],["2008/05/30",263.75245],["2008/06/30",251.74401],["2008/07/31",234.83114],["2008/08/29",249.1657],["2008/09/30",237.42284],["2008/10/31",198.63814],["2008/11/28",179.86848],["2008/12/31",172.92993],["2009/01/30",152.02863],["2009/02/27",143.58259],["2009/03/31",163.48786],["2009/04/30",180.30833],["2009/05/29",185.91515],["2009/06/30",211.74316],["2009/07/31",209.57905],["2009/08/31",219.64811],["2009/09/30",228.908],["2009/10/30",246.21804],["2009/11/30",261.13496],["2009/12/31",268.55928],["2010/01/29",247.15159],["2010/02/26",251.44911],["2010/03/31",256.61707],["2010/04/30",267.60383],["2010/05/28",226.10705],["2010/06/30",199.45068],["2010/07/30",223.34857],["2010/08/31",203.05596],["2010/09/30",209.68338],["2010/10/29",228.13303],["2010/11/30",216.09113],["2010/12/31",234.52773],["2011/01/31",232.95604],["2011/02/28",223.33531],["2011/03/31",214.06309],["2011/04/29",218.57733],["2011/05/31",210.90351],["2011/06/30",217.776],["2011/07/29",229.56448],["2011/08/31",222.86187],["2011/09/30",209.3249],["2011/10/31",224.01641],["2011/11/30",215.18362],["2011/12/30",218.38025],["2012/01/31",247.77948],["2012/02/29",266.32308],["2012/03/30",270.64434],["2012/04/30",268.95373],["2012/05/31",245.22128],["2012/06/29",256.98249],["2012/07/31",247.0587],["2012/08/31",258.37628],["2012/09/28",250.90457],["2012/10/31",240.20584],["2012/11/30",224.00415],["2012/12/31",223.66703],["2013/01/31",229.92792],["2013/02/28",232.85961],["2013/03/28",239.60249],["2013/04/30",276.42163],["2013/05/31",291.45362],["2013/06/28",288.48896],["2013/07/31",265.22581],["2013/08/30",278.22054],["2013/09/30",277.75488],["2013/10/31",295.55982],["2013/11/29",318.30803],["2013/12/31",310.503],["2014/01/31",314.09938],["2014/02/28",318.00072],["2014/03/31",338.5774],["2014/04/30",333.72064],["2014/05/30",338.18127],["2014/06/30",343.5663],["2014/07/31",355.63187],["2014/08/29",374.33633],["2014/09/30",382.7018],["2014/10/31",387.00194],["2014/11/28",394.09079],["2014/12/31",381.7261],["2015/01/30",331.43293],["2015/02/27",359.73599],["2015/03/31",329.83402],["2015/04/30",393.47694],["2015/05/29",379.0775],["2015/06/30",354.39205],["2015/07/31",373.50571],["2015/08/31",348.07213],["2015/09/30",353.46036],["2015/10/30",420.48375],["2015/11/30",434.14308],["2015/12/31",439.679]]
+	},{
+		"Name": "IBM",
+		"Annual Revenue": [["2001/12/31",83.067],["2002/12/31",81.186],["2003/12/31",89.131],["2004/12/31",96.293],["2005/12/31",91.134],["2006/12/31",91.424],["2007/12/31",98.786],["2008/12/31",103.63],["2009/12/31",95.758],["2010/12/31",99.871],["2011/12/31",106.916],["2012/12/31",102.874],["2013/12/31",98.367],["2014/12/31",92.793],["2015/12/31",81.741]],
+		"Annual Income": [["2001/12/31",7.723],["2002/12/31",3.579],["2003/12/31",6.558],["2004/12/31",7.479],["2005/12/31",7.934],["2006/12/31",9.492],["2007/12/31",10.418],["2008/12/31",12.334],["2009/12/31",13.425],["2010/12/31",14.833],["2011/12/31",15.855],["2012/12/31",16.604],["2013/12/31",16.483],["2014/12/31",12.022],["2015/12/31",13.19]],
+		"Shareholder Equity": [["2001/12/31",23.448],["2002/3/31",23.051],["2002/6/30",21.395],["2002/9/30",22.092],["2002/12/31",22.782],["2003/3/31",24.573],["2003/6/30",26.573],["2003/9/30",27.326],["2003/12/31",27.864],["2004/3/31",28.185],["2004/6/30",28.83],["2004/9/30",29.702],["2004/12/31",31.688],["2005/3/31",29.92],["2005/6/30",30.125],["2005/9/30",30.235],["2005/12/31",33.098],["2006/3/31",32.731],["2006/6/30",33.549],["2006/9/30",34.248],["2006/12/31",28.506],["2007/3/31",27.809],["2007/6/30",16.756],["2007/9/30",20.546],["2007/12/31",28.47],["2008/3/31",28.728],["2008/6/30",28.264],["2008/9/30",27.519],["2008/12/31",13.465],["2009/3/31",13.601],["2009/6/30",15.38],["2009/9/30",18.396],["2009/12/31",22.637],["2010/3/31",22.033],["2010/6/30",21.059],["2010/9/30",22.238],["2010/12/31",23.046],["2011/3/31",22.671],["2011/6/30",23.127],["2011/9/30",22.291],["2011/12/31",20.138],["2012/3/31",20.701],["2012/6/30",20.472],["2012/9/30",21.541],["2012/12/31",18.86],["2013/3/31",19.092],["2013/6/30",17.756],["2013/9/30",19.877],["2013/12/31",22.792],["2014/3/31",16.607],["2014/6/30",17.377],["2014/9/30",14.255],["2014/12/31",11.868],["2015/3/31",12.141],["2015/6/30",13.684],["2015/9/30",13.294],["2015/12/31",14.262]],
+		"Market Capitalization": [["2001/12/31",208.43751],["2002/01/31",184.18632],["2002/02/28",169.07977],["2002/03/28",178.56195],["2002/04/30",143.38786],["2002/05/31",137.7417],["2002/06/28",123.25604],["2002/07/31",119.28037],["2002/08/30",127.71811],["2002/09/30",98.54902],["2002/10/31",133.41553],["2002/11/29",146.90243],["2002/12/31",133.48343],["2003/01/31",134.68909],["2003/02/28",134.56683],["2003/03/31",135.52702],["2003/04/30",146.70718],["2003/05/30",152.1331],["2003/06/30",142.73995],["2003/07/31",140.57722],["2003/08/29",141.89216],["2003/09/30",151.96498],["2003/10/31",153.94347],["2003/11/28",155.76712],["2003/12/31",157.04706],["2004/01/30",168.14609],["2004/02/27",163.52008],["2004/03/31",154.78444],["2004/04/30",149.48125],["2004/05/28",149.40659],["2004/06/30",147.84876],["2004/07/30",145.52913],["2004/08/31",141.87202],["2004/09/30",142.73115],["2004/10/29",149.40658],["2004/11/30",156.88107],["2004/12/31",162.22251],["2005/01/31",153.73125],["2005/02/28",151.14879],["2005/03/31",147.42523],["2005/04/29",123.22542],["2005/05/31",121.88636],["2005/06/30",118.40771],["2005/07/29",133.18474],["2005/08/31",128.65269],["2005/09/30",126.70881],["2005/10/31",129.33081],["2005/11/30",140.41902],["2005/12/30",129.83626],["2006/01/31",127.42255],["2006/02/28",125.7612],["2006/03/31",127.86103],["2006/04/28",127.65948],["2006/05/31",123.87652],["2006/06/30",116.90767],["2006/07/31",117.80556],["2006/08/31",123.2233],["2006/09/29",124.69949],["2006/10/31",139.08146],["2006/11/30",138.46386],["2006/12/29",146.34208],["2007/01/31",149.27319],["2007/02/28",139.92386],["2007/03/30",141.91115],["2007/04/30",151.7642],["2007/05/31",158.28259],["2007/06/29",156.27807],["2007/07/31",150.52899],["2007/08/31",158.74585],["2007/09/28",160.2559],["2007/10/31",160.00817],["2007/11/30",144.93334],["2007/12/31",149.64617],["2008/01/31",148.27568],["2008/02/29",157.61992],["2008/03/31",158.14233],["2008/04/30",165.77887],["2008/05/30",177.76934],["2008/06/30",160.5892],["2008/07/31",173.39244],["2008/08/29",164.92469],["2008/09/30",157.13085],["2008/10/31",124.90129],["2008/11/28",109.62617],["2008/12/31",112.69866],["2009/01/30",122.72852],["2009/02/27",123.23737],["2009/03/31",128.03018],["2009/04/30",136.38142],["2009/05/29",140.43811],["2009/06/30",136.88247],["2009/07/31",154.5925],["2009/08/31",154.74981],["2009/09/30",157.12004],["2009/10/30",158.43365],["2009/11/30",165.97373],["2009/12/31",170.86867],["2010/01/29",159.76024],["2010/02/26",165.18127],["2010/03/31",164.46109],["2010/04/30",165.42285],["2010/05/28",160.62687],["2010/06/30",155.74262],["2010/07/30",161.94811],["2010/08/31",155.30117],["2010/09/30",166.65032],["2010/10/29",178.40305],["2010/11/30",175.74441],["2010/12/31",180.22033],["2011/01/31",198.93495],["2011/02/28",197.41854],["2011/03/31",197.51043],["2011/04/29",206.60653],["2011/05/31",204.60805],["2011/06/30",204.87843],["2011/07/29",217.1795],["2011/08/31",205.30837],["2011/09/30",206.10496],["2011/10/31",217.60828],["2011/11/30",221.58022],["2011/12/30",216.72431],["2012/01/31",224.02897],["2012/02/29",227.94352],["2012/03/30",241.75476],["2012/04/30",238.86355],["2012/05/31",222.50714],["2012/06/29",225.59848],["2012/07/31",223.96097],["2012/08/31",222.66964],["2012/09/28",237.06859],["2012/10/31",219.80577],["2012/11/30",214.76628],["2012/12/31",214.03178],["2013/01/31",226.90387],["2013/02/28",223.827],["2013/03/28",237.72494],["2013/04/30",224.57522],["2013/05/31",230.65141],["2013/06/28",211.9017],["2013/07/31",213.65185],["2013/08/30",199.66326],["2013/09/30",201.07852],["2013/10/31",194.59598],["2013/11/29",195.10632],["2013/12/31",197.77211],["2014/01/31",186.28978],["2014/02/28",192.82508],["2014/03/31",194.83518],["2014/04/30",198.86367],["2014/05/30",186.60613],["2014/06/30",180.83354],["2014/07/31",191.2085],["2014/08/29",191.83698],["2014/09/30",187.86725],["2014/10/31",162.70019],["2014/11/28",160.49324],["2014/12/31",158.91964],["2015/01/30",151.8572],["2015/02/27",160.06541],["2015/03/31",158.04982],["2015/04/30",168.6751],["2015/05/29",167.06014],["2015/06/30",159.33032],["2015/07/31",158.67403],["2015/08/31",144.86266],["2015/09/30",140.63686],["2015/10/30",135.89302],["2015/11/30",135.25275],["2015/12/31",133.50655]]
+	},{
+		"Name": "Facebook",
+		"Annual Revenue": [["2010/12/31",1.974],["2011/12/31",3.711],["2012/12/31",5.089],["2013/12/31",7.872],["2014/12/31",12.466],["2015/12/31",17.928]],
+		"Annual Income": [["2010/12/31",0.606],["2011/12/31",1],["2012/12/31",0.053],["2013/12/31",1.5],["2014/12/31",2.94],["2015/12/31",3.688]],
+		"Shareholder Equity": [["2011/12/31",4.899],["2012/3/31",5.597],["2012/6/30",13.309],["2012/9/30",14.174],["2012/12/31",11.755],["2013/3/31",11.824],["2013/6/30",12.349],["2013/9/30",13.048],["2013/12/31",15.47],["2014/3/31",16.737],["2014/6/30",18.346],["2014/9/30",21.238],["2014/12/31",36.096],["2015/3/31",37.501],["2015/6/30",39.452],["2015/9/30",41.42],["2015/12/31",44.218]],
+		"Market Capitalization": [["2012/05/31",63.28732],["2012/06/29",66.55806],["2012/07/31",46.5108],["2012/08/31",38.68688],["2012/09/28",46.40368],["2012/10/31",45.73328],["2012/11/30",60.65996],["2012/12/31",63.14193],["2013/01/31",73.8009],["2013/02/28",64.91315],["2013/03/28",60.93499],["2013/04/30",67.14282],["2013/05/31",58.87117],["2013/06/28",60.15749],["2013/07/31",89.61978],["2013/08/30",100.5641],["2013/09/30",123.21419],["2013/10/31",123.24465],["2013/11/29",115.40147],["2013/12/31",139.191],["2014/01/31",159.53741],["2014/02/28",174.55539],["2014/03/31",154.45536],["2014/04/30",153.41624],["2014/05/30",162.44978],["2014/06/30",173.27175],["2014/07/31",188.89375],["2014/08/29",194.53586],["2014/09/30",206.13632],["2014/10/31",209.06071],["2014/11/28",216.61578],["2014/12/31",216.73956],["2015/01/30",212.47299],["2015/02/27",221.03796],["2015/03/31",230.69529],["2015/04/30",221.20477],["2015/05/29",222.38422],["2015/06/30",240.142],["2015/07/31",264.87745],["2015/08/31",251.97309],["2015/09/30",252.9786],["2015/10/30",286.94358],["2015/11/30",294.7901],["2015/12/31",295.97786]]
+	},{
+		"Name": "Amazon",
+		"Annual Revenue": [["2001/12/31",3.12243],["2002/12/31",3.93294],["2003/12/31",5.2637],["2004/12/31",6.921],["2005/12/31",8.49],["2006/12/31",10.711],["2007/12/31",14.835],["2008/12/31",19.166],["2009/12/31",24.509],["2010/12/31",34.204],["2011/12/31",48.077],["2012/12/31",61.093],["2013/12/31",74.452],["2014/12/31",88.988],["2015/12/31",107.006]],
+		"Annual Income": [["2001/12/31",-0.56728],["2002/12/31",-0.14913],["2003/12/31",0.03528],["2004/12/31",0.588],["2005/12/31",0.359],["2006/12/31",0.19],["2007/12/31",0.476],["2008/12/31",0.645],["2009/12/31",0.902],["2010/12/31",1.152],["2011/12/31",0.631],["2012/12/31",-0.039],["2013/12/31",0.274],["2014/12/31",-0.241],["2015/12/31",0.596]],
+		"Shareholder Equity": [["2001/12/31",-1.44],["2002/3/31",-1.44738],["2002/6/30",-1.44391],["2002/9/30",-1.47844],["2002/12/31",-1.35281],["2003/3/31",-1.28906],["2003/6/30",-1.24684],["2003/9/30",-1.15803],["2003/12/31",-1.03611],["2004/3/31",-0.90505],["2004/6/30",-0.791],["2004/9/30",-0.721],["2004/12/31",-0.22721],["2005/3/31",-0.162],["2005/6/30",-0.064],["2005/9/30",0.006],["2005/12/31",0.246],["2006/3/31",0.324],["2006/6/30",0.383],["2006/9/30",0.196],["2006/12/31",0.431],["2007/3/31",0.353],["2007/6/30",0.55],["2007/9/30",0.761],["2007/12/31",1.197],["2008/3/31",1.47],["2008/6/30",2.23],["2008/9/30",2.527],["2008/12/31",2.672],["2009/3/31",2.918],["2009/6/30",3.256],["2009/9/30",3.585],["2009/12/31",5.257],["2010/3/31",5.618],["2010/6/30",5.857],["2010/9/30",6.397],["2010/12/31",6.864],["2011/3/31",7.347],["2011/6/30",7.765],["2011/9/30",7.766],["2011/12/31",7.757],["2012/3/31",7.271],["2012/6/30",7.505],["2012/9/30",7.553],["2012/12/31",8.192],["2013/3/31",8.432],["2013/6/30",8.733],["2013/9/30",9.087],["2013/12/31",9.746],["2014/3/31",10.328],["2014/6/30",10.602],["2014/9/30",10.336],["2014/12/31",10.741],["2015/3/31",10.873],["2015/6/30",11.768],["2015/9/30",12.43],["2015/12/31",13.384]],
+		"Market Capitalization": [["2001/12/31",4.03822],["2002/01/31",5.297],["2002/02/28",5.26341],["2002/03/28",5.33806],["2002/04/30",6.26001],["2002/05/31",6.83762],["2002/06/28",6.09498],["2002/07/31",5.50121],["2002/08/30",5.68421],["2002/09/30",6.07277],["2002/10/31",7.38517],["2002/11/29",8.90722],["2002/12/31",7.32754],["2003/01/31",8.48311],["2003/02/28",8.54523],["2003/03/31",10.19358],["2003/04/30",11.23842],["2003/05/30",14.0588],["2003/06/30",14.40923],["2003/07/31",16.53056],["2003/08/29",18.38847],["2003/09/30",19.39244],["2003/10/31",21.83054],["2003/11/28",21.64604],["2003/12/31",21.22449],["2004/01/30",20.32904],["2004/02/27",17.39026],["2004/03/31",17.52381],["2004/04/30",17.65907],["2004/05/28",19.64369],["2004/06/30",22.12508],["2004/07/30",15.83505],["2004/08/31",15.51769],["2004/09/30",16.64898],["2004/10/29",13.92681],["2004/11/30",16.1915],["2004/12/31",18.1461],["2005/01/31",17.70771],["2005/02/28",14.41363],["2005/03/31",14.08497],["2005/04/29",13.29641],["2005/05/31",14.59071],["2005/06/30",13.63308],["2005/07/29",18.59789],["2005/08/31",17.5887],["2005/09/30",18.7542],["2005/10/31",16.52088],["2005/11/30",20.08534],["2005/12/30",19.54238],["2006/01/31",18.64512],["2006/02/28",15.60959],["2006/03/31",15.23301],["2006/04/28",14.71304],["2006/05/31",14.46232],["2006/06/30",16.20692],["2006/07/31",11.26536],["2006/08/31",12.916],["2006/09/29",13.45643],["2006/10/31",15.69013],["2006/11/30",16.61696],["2006/12/29",16.25447],["2007/01/31",15.59538],["2007/02/28",16.23052],["2007/03/30",16.50007],["2007/04/30",25.1268],["2007/05/31",28.32654],["2007/06/29",28.02746],["2007/07/31",32.46835],["2007/08/31",33.03471],["2007/09/28",38.50811],["2007/10/31",37.01307],["2007/11/30",37.59847],["2007/12/31",38.53824],["2008/01/31",32.3232],["2008/02/29",26.87224],["2008/03/31",29.7321],["2008/04/30",32.84215],["2008/05/30",34.09102],["2008/06/30",31.23858],["2008/07/31",32.51482],["2008/08/29",34.41868],["2008/09/30",31.35956],["2008/10/31",24.54637],["2008/11/28",18.31114],["2008/12/31",21.94784],["2009/01/30",25.20926],["2009/02/27",27.7679],["2009/03/31",31.50576],["2009/04/30",34.59522],["2009/05/29",33.50822],["2009/06/30",36.14112],["2009/07/31",37.0318],["2009/08/31",35.05844],["2009/09/30",40.42488],["2009/10/30",51.44269],["2009/11/30",58.84669],["2009/12/31",59.72688],["2010/01/29",55.75056],["2010/02/26",52.63429],["2010/03/31",60.55342],["2010/04/30",61.10158],["2010/05/28",55.91396],["2010/06/30",48.94848],["2010/07/30",52.79409],["2010/08/31",55.90199],["2010/09/30",70.51994],["2010/10/29",74.1613],["2010/11/30",78.72597],["2010/12/31",81.18],["2011/01/31",76.50828],["2011/02/28",78.15445],["2011/03/31",81.41876],["2011/04/29",88.51456],["2011/05/31",88.91236],["2011/06/30",92.83846],["2011/07/29",101.00968],["2011/08/31",97.70049],["2011/09/30",98.38465],["2011/10/31",97.09459],["2011/11/30",87.4447],["2011/12/30",78.71797],["2012/01/31",88.48352],["2012/02/29",81.77126],["2012/03/30",92.15592],["2012/04/30",104.47686],["2012/05/31",95.92138],["2012/06/29",102.8775],["2012/07/31",105.46683],["2012/08/31",112.23425],["2012/09/28",114.96925],["2012/10/31",105.49091],["2012/11/30",114.16819],["2012/12/31",113.89498],["2013/01/31",120.68332],["2013/02/28",120.12422],["2013/03/28",121.13332],["2013/04/30",115.54515],["2013/05/31",122.55133],["2013/06/28",126.41635],["2013/07/31",137.62245],["2013/08/30",128.37513],["2013/09/30",143.18912],["2013/10/31",166.62876],["2013/11/29",180.1731],["2013/12/31",183.04461],["2014/01/31",164.73358],["2014/02/28",166.29968],["2014/03/31",154.7279],["2014/04/30",139.95071],["2014/05/30",143.82532],["2014/06/30",150.04836],["2014/07/31",144.61268],["2014/08/29",156.64872],["2014/09/30",149.28972],["2014/10/31",141.42997],["2014/11/28",156.79252],["2014/12/31",144.31275],["2015/01/30",164.63802],["2015/02/27",176.54018],["2015/03/31",173.3986],["2015/04/30",196.41493],["2015/05/29",199.88426],["2015/06/30",203.15412],["2015/07/31",250.76282],["2015/08/31",239.88388],["2015/09/30",240.07641],["2015/10/30",293.39814],["2015/11/30",311.63298],["2015/12/31",316.83155]]
+	},{
+		"Name": "Intel",
+		"Annual Revenue": [["2001/12/31",26.539],["2002/12/31",26.764],["2003/12/31",30.141],["2004/12/31",34.209],["2005/12/31",38.826],["2006/12/31",35.382],["2007/12/31",38.334],["2008/12/31",37.586],["2009/12/31",35.127],["2010/12/31",43.623],["2011/12/31",53.999],["2012/12/31",53.341],["2013/12/31",52.708],["2014/12/31",55.87],["2015/12/31",55.355]],
+		"Annual Income": [["2001/12/31",1.291],["2002/12/31",3.117],["2003/12/31",5.641],["2004/12/31",7.516],["2005/12/31",8.664],["2006/12/31",5.044],["2007/12/31",6.976],["2008/12/31",5.292],["2009/12/31",4.369],["2010/12/31",11.464],["2011/12/31",12.942],["2012/12/31",11.005],["2013/12/31",9.62],["2014/12/31",11.704],["2015/12/31",11.42]],
+		"Shareholder Equity": [["2001/12/31",35.83],["2002/3/31",35.86],["2002/6/30",35.58],["2002/9/30",35.307],["2002/12/31",35.468],["2003/3/31",35.401],["2003/6/30",35.49],["2003/9/30",37.361],["2003/12/31",37.846],["2004/3/31",38.11],["2004/6/30",38.593],["2004/9/30",38.195],["2004/12/31",38.579],["2005/3/31",37.711],["2005/6/30",37.614],["2005/9/30",36.676],["2005/12/31",36.182],["2006/3/31",34.358],["2006/6/30",34.796],["2006/9/30",35.017],["2006/12/31",36.752],["2007/3/31",37.526],["2007/6/30",39.698],["2007/9/30",40.902],["2007/12/31",42.762],["2008/3/31",40.66],["2008/6/30",40.361],["2008/9/30",38.911],["2008/12/31",39.546],["2009/3/31",39.064],["2009/6/30",39.047],["2009/9/30",39.033],["2009/12/31",41.704],["2010/3/31",42.9],["2010/6/30",45.841],["2010/9/30",47.696],["2010/12/31",49.43],["2011/3/31",47.349],["2011/6/30",48.723],["2011/9/30",46.117],["2011/12/31",45.911],["2012/3/31",46.76],["2012/6/30",48.779],["2012/9/30",49.269],["2012/12/31",51.203],["2013/3/31",51.194],["2013/6/30",53.84],["2013/9/30",55.452],["2013/12/31",58.256],["2014/3/31",58.038],["2014/6/30",59.247],["2014/9/30",56.073],["2014/12/31",55.865],["2015/3/31",54.924],["2015/6/30",57.695],["2015/9/30",57.097],["2015/12/31",61.085]],
+		"Market Capitalization": [["2001/12/31",210.4005],["2002/01/31",234.4176],["2002/02/28",191.37065],["2002/03/28",203.83823],["2002/04/30",191.28646],["2002/05/31",184.66732],["2002/06/28",122.15322],["2002/07/31",125.23535],["2002/08/30",111.10555],["2002/09/30",92.02125],["2002/10/31",114.6125],["2002/11/29",138.33],["2002/12/31",102.37275],["2003/01/31",103.2275],["2003/02/28",112.94944],["2003/03/31",106.37352],["2003/04/30",120.02958],["2003/05/30",136.03788],["2003/06/30",135.4731],["2003/07/31",162.0339],["2003/08/29",186.1209],["2003/09/30",179.76064],["2003/10/31",215.2294],["2003/11/28",219.08328],["2003/12/31",207.90835],["2004/01/30",197.89168],["2004/02/27",189.3328],["2004/03/31",175.9296],["2004/04/30",166.42164],["2004/05/28",184.6614],["2004/06/30",177.054],["2004/07/30",156.3977],["2004/08/31",136.57535],["2004/09/30",126.83938],["2004/10/29",140.74998],["2004/11/30",141.50874],["2004/12/31",146.25767],["2005/01/31",139.79615],["2005/02/28",149.38573],["2005/03/31",143.39879],["2005/04/29",145.18896],["2005/05/31",166.42408],["2005/06/30",158.53986],["2005/07/29",165.36402],["2005/08/31",156.71196],["2005/09/30",148.5902],["2005/10/31",141.6815],["2005/11/30",160.85372],["2005/12/30",150.48384],["2006/01/31",125.04316],["2006/02/28",121.1898],["2006/03/31",113.02368],["2006/04/28",116.22366],["2006/05/31",104.82234],["2006/06/30",109.573],["2006/07/31",103.824],["2006/08/31",112.87976],["2006/09/29",118.64776],["2006/10/31",123.04644],["2006/11/30",123.36357],["2006/12/29",116.7615],["2007/01/31",120.87632],["2007/02/28",114.53262],["2007/03/30",110.32271],["2007/04/30",124.915],["2007/05/31",128.86521],["2007/06/29",137.92882],["2007/07/31",137.9408],["2007/08/31",150.38],["2007/09/28",151.0224],["2007/10/31",157.0153],["2007/11/30",152.22896],["2007/12/31",154.30808],["2008/01/31",122.1268],["2008/02/29",115.58578],["2008/03/31",121.19196],["2008/04/30",127.37172],["2008/05/30",132.77504],["2008/06/30",121.1472],["2008/07/31",124.75218],["2008/08/29",128.57514],["2008/09/30",105.30006],["2008/10/31",89.16442],["2008/11/28",76.7556],["2008/12/31",81.53892],["2009/01/30",71.7498],["2009/02/27",70.85988],["2009/03/31",83.59686],["2009/04/30",88.1313],["2009/05/29",87.7962],["2009/06/30",92.63035],["2009/07/31",107.7615],["2009/08/31",113.75136],["2009/09/30",108.0264],["2009/10/30",105.52542],["2009/11/30",106.0224],["2009/12/31",112.6692],["2010/01/29",107.1462],["2010/02/26",113.40772],["2010/03/31",123.41973],["2010/04/30",127.08176],["2010/05/28",119.18088],["2010/06/30",108.27815],["2010/07/30",114.7008],["2010/08/31",98.35873],["2010/09/30",107.0592],["2010/10/29",111.8389],["2010/11/30",118.01653],["2010/12/31",115.89633],["2011/01/31",118.26606],["2011/02/28",117.82736],["2011/03/31",110.74784],["2011/04/29",122.7413],["2011/05/31",119.34802],["2011/06/30",117.49232],["2011/07/29",117.25483],["2011/08/31",105.70263],["2011/09/30",112.03008],["2011/10/31",124.95768],["2011/11/30",126.84172],["2011/12/30",123.481],["2012/01/31",132.1],["2012/02/29",134.29248],["2012/03/30",140.79451],["2012/04/30",142.85524],["2012/05/31",130.00104],["2012/06/29",134.07615],["2012/07/31",128.5771],["2012/08/31",124.22449],["2012/09/28",113.34297],["2012/10/31",107.63088],["2012/11/30",97.35545],["2012/12/31",101.94528],["2013/01/31",104.02176],["2013/02/28",103.27248],["2013/03/28",107.99591],["2013/04/30",119.05545],["2013/05/31",120.69588],["2013/06/28",120.44733],["2013/07/31",116.25497],["2013/08/30",109.50436],["2013/09/30",113.98613],["2013/10/31",121.64037],["2013/11/29",118.50864],["2013/12/31",128.91849],["2014/01/31",121.89018],["2014/02/28",123.10672],["2014/03/31",128.34721],["2014/04/30",132.86282],["2014/05/30",135.99896],["2014/06/30",152.8932],["2014/07/31",167.78939],["2014/08/29",172.88892],["2014/09/30",169.12074],["2014/10/31",164.43835],["2014/11/28",180.10375],["2014/12/31",172.30492],["2015/01/30",156.87392],["2015/02/27",157.472],["2015/03/31",148.28234],["2015/04/30",154.4172],["2015/05/29",163.47824],["2015/06/30",144.56249],["2015/07/31",137.6283],["2015/08/31",135.67916],["2015/09/30",142.5622],["2015/10/30",159.78534],["2015/11/30",164.07963],["2015/12/31",162.56955]]
+	},{
+		"Name": "Oracle",
+		"Annual Revenue": [["2002/5/31",9.673],["2003/5/31",9.475],["2004/5/31",10.156],["2005/5/31",11.799],["2006/5/31",14.38],["2007/5/31",17.996],["2008/5/31",22.43],["2009/5/31",23.252],["2010/5/31",26.82],["2011/5/31",35.622],["2012/5/31",37.121],["2013/5/31",37.18],["2014/5/31",38.275],["2015/5/31",38.226]],
+		"Annual Income": [["2002/5/31",2.224],["2003/5/31",2.307],["2004/5/31",2.681],["2005/5/31",2.886],["2006/5/31",3.381],["2007/5/31",4.274],["2008/5/31",5.521],["2009/5/31",5.593],["2010/5/31",6.135],["2011/5/31",8.547],["2012/5/31",9.981],["2013/5/31",10.925],["2014/5/31",10.955],["2015/5/31",9.938]],
+		"Shareholder Equity": [["2002/2/28",5.9897],["2002/5/31",6.117],["2002/8/31",5.735],["2002/11/30",5.298],["2003/2/28",5.584],["2003/5/31",6.32],["2003/8/31",6.502],["2003/11/30",7.199],["2004/2/29",7.406],["2004/5/31",7.995],["2004/8/31",8.016],["2004/11/30",8.599],["2005/2/28",9.87],["2005/5/31",10.837],["2005/8/31",11.331],["2005/11/30",12.115],["2006/2/28",15.043],["2006/5/31",15.012],["2006/8/31",14.899],["2006/11/30",15.514],["2007/2/28",15.791],["2007/5/31",16.919],["2007/8/31",17.785],["2007/11/30",19.295],["2008/2/29",20.815],["2008/5/31",23.025],["2008/8/31",23.816],["2008/11/30",22.821],["2009/2/28",23.077],["2009/5/31",25.09],["2009/8/31",26.143],["2009/11/30",27.531],["2010/2/28",28.476],["2010/5/31",30.798],["2010/8/31",32.106],["2010/11/30",34.412],["2011/2/28",36.617],["2011/5/31",39.776],["2011/8/31",40.892],["2011/11/30",41.92],["2012/2/29",42.873],["2012/5/31",43.688],["2012/8/31",43.329],["2012/11/30",42.983],["2013/2/28",43.348],["2013/5/31",44.648],["2013/8/31",43.541],["2013/11/30",43.563],["2014/2/28",44.707],["2014/5/31",46.878],["2014/8/31",47.354],["2014/11/30",47.543],["2015/2/28",48.095],["2015/5/31",48.663],["2015/8/31",47.097],["2015/11/30",45.924]],
+		"Market Capitalization": [["2001/12/31",75.91602],["2002/01/31",94.88128],["2002/02/28",91.24946],["2002/03/28",70.27636],["2002/04/30",55.13182],["2002/05/31",43.01352],["2002/06/28",51.43157],["2002/07/31",54.38083],["2002/08/30",52.10432],["2002/09/30",42.09765],["2002/10/31",54.57697],["2002/11/29",65.0746],["2002/12/31",56.90643],["2003/01/31",63.38744],["2003/02/28",62.69432],["2003/03/31",56.88127],["2003/04/30",62.2868],["2003/05/30",68.21138],["2003/06/30",62.85761],["2003/07/31",62.75294],["2003/08/29",67.1493],["2003/09/30",58.79977],["2003/10/31",62.56295],["2003/11/28",62.82428],["2003/12/31",69.16097],["2004/01/30",72.45435],["2004/02/27",67.27904],["2004/03/31",62.33986],["2004/04/30",58.44362],["2004/05/28",59.22286],["2004/06/30",61.68738],["2004/07/30",54.34488],["2004/08/31",51.12616],["2004/09/30",57.84909],["2004/10/29",64.92638],["2004/11/30",65.02496],["2004/12/31",71.68516],["2005/01/31",71.9464],["2005/02/28",66.5112],["2005/03/31",64.16443],["2005/04/29",59.43436],["2005/05/31",65.856],["2005/06/30",67.93662],["2005/07/29",69.84091],["2005/08/31",66.88551],["2005/09/30",63.88262],["2005/10/31",65.32513],["2005/11/30",64.827],["2005/12/30",63.02833],["2006/01/31",64.88666],["2006/02/28",65.97504],["2006/03/31",72.72128],["2006/04/28",77.83274],["2006/05/31",74.39904],["2006/06/30",75.81168],["2006/07/31",78.41779],["2006/08/31",81.1971],["2006/09/29",92.1677],["2006/10/31",95.9604],["2006/11/30",98.6409],["2006/12/29",88.82275],["2007/01/31",88.92639],["2007/02/28",84.38448],["2007/03/30",93.20384],["2007/04/30",96.64822],["2007/05/31",99.09064],["2007/06/29",100.77794],["2007/07/31",97.76125],["2007/08/31",103.86017],["2007/09/28",110.87636],["2007/10/31",113.53944],["2007/11/30",103.48304],["2007/12/31",115.98415],["2008/01/31",105.55688],["2008/02/29",96.8012],["2008/03/31",100.71444],["2008/04/30",107.35665],["2008/05/30",117.60316],["2008/06/30",108.27268],["2008/07/31",111.00528],["2008/08/29",113.06762],["2008/09/30",104.68704],["2008/10/31",94.27504],["2008/11/28",82.93523],["2008/12/31",89.46872],["2009/01/30",84.92716],["2009/02/27",78.41759],["2009/03/31",90.05029],["2009/04/30",96.37923],["2009/05/29",97.62508],["2009/06/30",107.25487],["2009/07/31",110.81],["2009/08/31",109.66256],["2009/09/30",104.47442],["2009/10/30",105.77784],["2009/11/30",110.59872],["2009/12/31",122.92523],["2010/01/29",115.55873],["2010/02/26",123.52657],["2010/03/31",129.04083],["2010/04/30",129.83134],["2010/05/28",113.28088],["2010/06/30",107.86326],["2010/07/30",118.82048],["2010/08/31",109.77112],["2010/09/30",134.97801],["2010/10/29",147.69661],["2010/11/30",136.6043],["2010/12/31",158.14075],["2011/01/31",161.82901],["2011/02/28",166.5069],["2011/03/31",169.1857],["2011/04/29",181.97616],["2011/05/31",173.42696],["2011/06/30",166.7061],["2011/07/29",154.90345],["2011/08/31",141.78157],["2011/09/30",144.98186],["2011/10/31",165.31161],["2011/11/30",157.7532],["2011/12/30",128.91272],["2012/01/31",141.77886],["2012/02/29",145.66064],["2012/03/30",145.07409],["2012/04/30",146.26812],["2012/05/31",129.83535],["2012/06/29",145.01043],["2012/07/31",147.45168],["2012/08/31",152.90115],["2012/09/28",151.6075],["2012/10/31",149.77626],["2012/11/30",152.7669],["2012/12/31",157.74678],["2013/01/31",168.11489],["2013/02/28",161.57856],["2013/03/28",152.29557],["2013/04/30",154.41537],["2013/05/31",156.94188],["2013/06/28",142.21208],["2013/07/31",149.80661],["2013/08/30",147.53751],["2013/09/30",151.17092],["2013/10/31",152.67488],["2013/11/29",160.83273],["2013/12/31",172.07087],["2014/01/31",165.95439],["2014/02/28",175.33013],["2014/03/31",182.41303],["2014/04/30",182.27926],["2014/05/30",187.36239],["2014/06/30",180.55665],["2014/07/31",179.93297],["2014/08/29",185.01154],["2014/09/30",169.63032],["2014/10/31",173.04242],["2014/11/28",187.9316],["2014/12/31",197.47977],["2015/01/30",183.95436],["2015/02/27",192.4297],["2015/03/31",188.43907],["2015/04/30",190.49159],["2015/05/29",189.92387],["2015/06/30",174.7439],["2015/07/31",173.18292],["2015/08/31",158.81938],["2015/09/30",154.18703],["2015/10/30",165.79802],["2015/11/30",163.98576],["2015/12/31",153.47057]]
+	},{
+		"Name": "SAP",
+		"Annual Revenue": [["2001/12/31",6.57335],["2002/12/31",6.99373],["2003/12/31",7.92216],["2004/12/31",9.33161],["2005/12/31",10.56795],["2006/12/31",11.79398],["2007/12/31",14.04561],["2008/12/31",16.9448],["2009/12/31",14.84418],["2010/12/31",16.50844],["2011/12/31",19.79552],["2012/12/31",20.84673],["2013/12/31",22.32559],["2014/12/31",23.30645],["2015/12/31",23.08792]],
+		"Annual Income": [["2001/12/31",0.52011],["2002/12/31",0.47986],["2003/12/31",1.21468],["2004/12/31",1.62743],["2005/12/31",1.85857],["2006/12/31",2.34985],["2007/12/31",2.6322],["2008/12/31",2.70385],["2009/12/31",2.43137],["2010/12/31",2.39865],["2011/12/31",4.78163],["2012/12/31",3.60188],["2013/12/31",4.41599],["2014/12/31",4.35337],["2015/12/31",3.40707]],
+		"Shareholder Equity": [["2001/12/31",2.75895],["2002/3/31",2.81772],["2002/6/30",2.37566],["2002/9/30",2.43371],["2002/12/31",3.01267],["2003/3/31",3.20511],["2003/6/30",3.45116],["2003/9/30",3.77712],["2003/12/31",4.65443],["2004/3/31",4.83567],["2004/6/30",4.79662],["2004/9/30",5.10649],["2004/12/31",6.24195],["2005/3/31",6.21045],["2005/6/30",5.8199],["2005/9/30",6.1597],["2005/12/31",6.84215],["2006/3/31",7.07488],["2006/6/30",6.60958],["2006/9/30",7.04096],["2006/12/31",8.098],["2007/3/31",8.11],["2007/6/30",7.923],["2007/9/30",8.65598],["2007/12/31",9.55446],["2008/3/31",10.22432],["2008/6/30",9.70661],["2008/9/30",9.32547],["2008/12/31",10.0793],["2009/3/31",9.78814],["2009/9/30",11.42372],["2009/12/31",12.1514],["2010/3/31",12.06143],["2010/6/30",10.93362],["2010/9/30",12.50331],["2010/12/31",13.0068],["2011/3/31",14.22774],["2011/6/30",14.39941],["2011/9/30",15.36678],["2011/12/31",16.45289],["2012/3/31",17.35854],["2012/6/30",15.89201],["2012/9/30",17.17459],["2012/12/31",18.70006],["2013/3/31",19.1521],["2013/6/30",18.73134],["2013/9/30",20.11076],["2013/12/31",22.10325],["2014/3/31",22.83197],["2014/6/30",22.00628],["2014/9/30",22.47375],["2014/12/31",23.71249],["2015/3/31",24.11348],["2015/6/30",23.05195],["2015/9/30",24.18808]],
+		"Market Capitalization": []
+	},{
+		"Name": "Yahoo",
+		"Annual Revenue": [["2001/12/31",0.71742],["2002/12/31",0.95307],["2003/12/31",1.6251],["2004/12/31",3.57452],["2005/12/31",5.25767],["2006/12/31",6.42568],["2007/12/31",6.96927],["2008/12/31",7.2085],["2009/12/31",6.46031],["2010/12/31",6.32465],["2011/12/31",4.9842],["2012/12/31",4.98657],["2013/12/31",4.68038],["2014/12/31",4.61813],["2015/12/31",4.9683]],
+		"Annual Income": [["2001/12/31",-0.09279],["2002/12/31",0.04281],["2003/12/31",0.23788],["2004/12/31",0.83955],["2005/12/31",1.89623],["2006/12/31",0.75139],["2007/12/31",0.66],["2008/12/31",0.41892],["2009/12/31",0.59799],["2010/12/31",1.23166],["2011/12/31",1.04883],["2012/12/31",3.94548],["2013/12/31",1.36628],["2014/12/31",7.52173],["2015/12/31",-4.35908]],
+		"Shareholder Equity": [["2001/12/31",1.96702],["2002/3/31",2.13981],["2002/6/30",2.19886],["2002/9/30",2.15566],["2002/12/31",2.26227],["2003/3/31",2.36089],["2003/6/30",2.55683],["2003/9/30",2.72509],["2003/12/31",4.36349],["2004/3/31",4.59149],["2004/6/30",4.96113],["2004/9/30",6.11678],["2004/12/31",7.10145],["2005/3/31",7.21218],["2005/6/30",7.6816],["2005/9/30",7.48743],["2005/12/31",8.56642],["2006/3/31",8.4451],["2006/6/30",8.69766],["2006/9/30",8.06724],["2006/12/31",9.16061],["2007/3/31",8.83586],["2007/6/30",8.96773],["2007/9/30",9.28272],["2007/12/31",9.53283],["2008/3/31",10.49997],["2008/6/30",11.6667],["2008/9/30",11.60183],["2008/12/31",11.25094],["2009/3/31",11.5721],["2009/6/30",11.89964],["2009/9/30",12.15968],["2009/12/31",12.49332],["2010/3/31",12.42054],["2010/6/30",12.13433],["2010/9/30",12.077],["2010/12/31",12.55813],["2011/3/31",12.82451],["2011/6/30",12.75878],["2011/9/30",12.46011],["2011/12/31",12.54107],["2012/3/31",12.81858],["2012/6/30",12.473],["2012/9/30",15.5615],["2012/12/31",14.5602],["2013/3/31",14.13992],["2013/6/30",13.80886],["2013/9/30",12.49411],["2013/12/31",13.07491],["2014/3/31",12.90518],["2014/6/30",12.69199],["2014/9/30",36.71357],["2014/12/31",38.74184],["2015/3/31",33.6589],["2015/6/30",33.5326],["2015/9/30",28.24595],["2015/12/31",29.04354]],
+		"Market Capitalization": [["2001/12/31",10.20972],["2002/01/31",9.92196],["2002/02/28",8.60332],["2002/03/28",10.98917],["2002/04/30",8.82487],["2002/05/31",9.57821],["2002/06/28",8.82487],["2002/07/31",7.90952],["2002/08/30",6.17988],["2002/09/30",5.64625],["2002/10/31",8.81615],["2002/11/29",10.79565],["2002/12/31",9.72596],["2003/01/31",10.82645],["2003/02/28",12.45821],["2003/03/31",14.35956],["2003/04/30",14.9418],["2003/05/30",18.00014],["2003/06/30",19.86035],["2003/07/31",18.99292],["2003/08/29",20.37178],["2003/09/30",21.6819],["2003/10/31",28.73207],["2003/11/28",28.25879],["2003/12/31",29.7515],["2004/01/30",31.03987],["2004/02/27",29.45328],["2004/03/31",32.25365],["2004/04/30",33.63224],["2004/05/28",41.5735],["2004/06/30",49.44319],["2004/07/30",41.90578],["2004/08/31",38.84448],["2004/09/30",46.34949],["2004/10/29",49.56224],["2004/11/30",51.7207],["2004/12/31",52.13345],["2005/01/31",48.68832],["2005/02/28",44.5485],["2005/03/31",47.10061],["2005/04/29",47.89186],["2005/05/31",51.94816],["2005/06/30",48.70719],["2005/07/29",46.86574],["2005/08/31",46.94633],["2005/09/30",47.63626],["2005/10/31",52.04234],["2005/11/30",57.07576],["2005/12/30",55.58608],["2006/01/31",49.16182],["2006/02/28",45.45637],["2006/03/31",45.62925],["2006/04/28",46.36475],["2006/05/31",44.5041],["2006/06/30",46.67593],["2006/07/31",38.38741],["2006/08/31",39.81929],["2006/09/29",34.91612],["2006/10/31",35.82815],["2006/11/30",36.7395],["2006/12/29",34.73998],["2007/01/31",38.50859],["2007/02/28",41.86281],["2007/03/30",42.44612],["2007/04/30",37.68165],["2007/05/31",38.5686],["2007/06/29",36.45875],["2007/07/31",31.14459],["2007/08/31",30.44802],["2007/09/28",35.95693],["2007/10/31",41.56341],["2007/11/30",35.83006],["2007/12/31",31.10246],["2008/01/31",25.64682],["2008/02/29",37.14644],["2008/03/31",38.95358],["2008/04/30",37.71166],["2008/05/30",36.81737],["2008/06/30",28.61648],["2008/07/31",27.56336],["2008/08/29",26.85661],["2008/09/30",23.97416],["2008/10/31",17.79054],["2008/11/28",15.97263],["2008/12/31",16.93015],["2009/01/30",16.27793],["2009/02/27",18.44528],["2009/03/31",17.85972],["2009/04/30",19.94389],["2009/05/29",22.10715],["2009/06/30",21.97085],["2009/07/31",20.09655],["2009/08/31",20.50353],["2009/09/30",24.92399],["2009/10/30",22.2768],["2009/11/30",20.97381],["2009/12/31",23.59394],["2010/01/29",21.10519],["2010/02/26",21.43709],["2010/03/31",22.90336],["2010/04/30",22.89509],["2010/05/28",21.24686],["2010/06/30",18.84431],["2010/07/30",18.7141],["2010/08/31",17.67458],["2010/09/30",18.44733],["2010/10/29",21.49471],["2010/11/30",20.61485],["2010/12/31",21.76594],["2011/01/31",21.09844],["2011/02/28",21.47436],["2011/03/31",21.77084],["2011/04/29",23.06206],["2011/05/31",21.56368],["2011/06/30",19.27833],["2011/07/29",16.54022],["2011/08/31",17.18415],["2011/09/30",16.3271],["2011/10/31",19.39828],["2011/11/30",19.4851],["2011/12/30",20.00602],["2012/01/31",18.40939],["2012/02/29",17.99991],["2012/03/30",18.47327],["2012/04/30",18.93855],["2012/05/31",18.63547],["2012/06/29",19.35692],["2012/07/31",18.76435],["2012/08/31",17.35465],["2012/09/28",18.92427],["2012/10/31",19.91056],["2012/11/30",22.19906],["2012/12/31",22.19314],["2013/01/31",21.89202],["2013/02/28",23.4631],["2013/03/28",25.91238],["2013/04/30",26.77356],["2013/05/31",28.4733],["2013/06/28",27.20661],["2013/07/31",28.66082],["2013/08/30",27.67111],["2013/09/30",33.60317],["2013/10/31",33.41573],["2013/11/29",37.51408],["2013/12/31",41.01983],["2014/01/31",36.52428],["2014/02/28",39.0332],["2014/03/31",36.28521],["2014/04/30",36.19475],["2014/05/30",34.8859],["2014/06/30",34.97827],["2014/07/31",35.61676],["2014/08/29",38.30219],["2014/09/30",39.90317],["2014/10/31",43.62554],["2014/11/28",49.01597],["2014/12/31",47.31969],["2015/01/30",41.2115],["2015/02/27",41.45144],["2015/03/31",41.64604],["2015/04/30",39.94481],["2015/05/29",40.29204],["2015/06/30",36.80836],["2015/07/31",34.5208],["2015/08/31",30.35044],["2015/09/30",27.27739],["2015/10/30",33.63793],["2015/11/30",31.92865],["2015/12/31",31.40925]]
+	},{
+		"Name": "HP",
+		"Annual Revenue": [["2002/10/31",56.588],["2003/10/31",73.061],["2004/10/31",79.905],["2005/10/31",86.696],["2006/10/31",91.658],["2007/10/31",104.286],["2008/10/31",118.364],["2009/10/31",114.552],["2010/10/31",126.033],["2011/10/31",127.245],["2012/10/31",120.357],["2013/10/31",112.298],["2014/10/31",111.454],["2015/10/31",103.355]],
+		"Annual Income": [["2002/10/31",-0.903],["2003/10/31",2.539],["2004/10/31",3.497],["2005/10/31",2.398],["2006/10/31",6.198],["2007/10/31",7.264],["2008/10/31",8.329],["2009/10/31",7.66],["2010/10/31",8.761],["2011/10/31",7.074],["2012/10/31",-12.65],["2013/10/31",5.113],["2014/10/31",5.013],["2015/10/31",4.554]],
+		"Shareholder Equity": [["2002/1/31",14.212],["2002/4/30",14.961],["2002/7/31",36.341],["2002/10/31",36.262],["2003/1/31",36.469],["2003/4/30",36.892],["2003/7/31",36.866],["2003/10/31",37.746],["2004/1/31",38.268],["2004/4/30",38.848],["2004/7/31",38.711],["2004/10/31",37.564],["2005/1/31",37.726],["2005/4/30",38.173],["2005/7/31",37.386],["2005/10/31",37.176],["2006/1/31",35.806],["2006/4/30",37.054],["2006/7/31",36.348],["2006/10/31",38.144],["2007/1/31",38.043],["2007/4/30",36.486],["2007/7/31",36.937],["2007/10/31",38.526],["2008/1/31",37.944],["2008/4/30",38.153],["2008/7/31",38.495],["2008/10/31",38.942],["2009/1/31",39.587],["2009/4/30",40.542],["2009/7/31",41.535],["2009/10/31",40.517],["2010/1/31",41.628],["2010/4/30",43.511],["2010/7/31",42.535],["2010/10/31",40.449],["2011/1/31",41.206],["2011/4/30",41.423],["2011/7/31",38.823],["2011/10/31",38.625],["2012/1/31",39.162],["2012/4/30",41.288],["2012/7/31",31.601],["2012/10/31",22.436],["2013/1/31",22.895],["2013/4/30",23.533],["2013/7/31",24.603],["2013/10/31",27.269],["2014/1/31",27.754],["2014/4/30",28.185],["2014/7/31",28.509],["2014/10/31",26.731],["2015/1/31",26.507],["2015/4/30",26.768],["2015/7/31",27.035],["2015/10/31",27.768]],
+		"Market Capitalization": [["2001/12/31",18.08173],["2002/01/31",19.49394],["2002/02/28",17.7473],["2002/03/28",15.82438],["2002/04/30",15.34845],["2002/05/31",26.56683],["2002/06/28",21.26772],["2002/07/31",19.60019],["2002/08/30",18.60287],["2002/09/30",16.16743],["2002/10/31",21.87138],["2002/11/29",26.96547],["2002/12/31",24.03083],["2003/01/31",24.12376],["2003/02/28",21.96556],["2003/03/31",21.54981],["2003/04/30",22.50431],["2003/05/30",26.92233],["2003/06/30",29.52391],["2003/07/31",29.30487],["2003/08/29",27.58839],["2003/09/30",26.80059],["2003/10/31",30.82216],["2003/11/28",30.03469],["2003/12/31",31.73398],["2004/01/30",32.93038],["2004/02/27",31.46296],["2004/03/31",31.64306],["2004/04/30",27.53327],["2004/05/28",29.40516],["2004/06/30",29.23446],["2004/07/30",27.80255],["2004/08/31",24.52813],["2004/09/30",25.70723],["2004/10/29",25.58384],["2004/11/30",26.43223],["2004/12/31",27.70505],["2005/01/31",25.81032],["2005/02/28",27.34366],["2005/03/31",28.8423],["2005/04/29",26.90984],["2005/05/31",29.49731],["2005/06/30",30.80772],["2005/07/29",32.26227],["2005/08/31",36.10806],["2005/09/30",37.9811],["2005/10/31",36.11594],["2005/11/30",38.22421],["2005/12/30",36.88437],["2006/01/31",39.99044],["2006/02/28",42.13202],["2006/03/31",42.24759],["2006/04/28",41.69542],["2006/05/31",41.00848],["2006/06/30",40.12194],["2006/07/31",39.63734],["2006/08/31",45.46248],["2006/09/29",45.62414],["2006/10/31",48.05094],["2006/11/30",48.74349],["2006/12/29",50.88049],["2007/01/31",52.89613],["2007/02/28",47.81509],["2007/03/30",48.77503],["2007/04/30",50.10409],["2007/05/31",54.34879],["2007/06/29",53.05279],["2007/07/31",53.87607],["2007/08/31",57.76198],["2007/09/28",58.27698],["2007/10/31",60.53462],["2007/11/30",59.78311],["2007/12/31",58.9885],["2008/01/31",49.90075],["2008/02/29",53.46706],["2008/03/31",51.10542],["2008/04/30",52.03978],["2008/05/30",52.83694],["2008/06/30",49.50041],["2008/07/31",49.75034],["2008/08/29",52.1046],["2008/09/30",51.41462],["2008/10/31",41.97113],["2008/11/28",38.68186],["2008/12/31",39.80904],["2009/01/30",38.1197],["2009/02/27",31.84504],["2009/03/31",34.88374],["2009/04/30",39.149],["2009/05/29",37.37544],["2009/06/30",41.87254],["2009/07/31",46.82645],["2009/08/31",48.32315],["2009/09/30",50.82058],["2009/10/30",51.0897],["2009/11/30",52.6584],["2009/12/31",55.2881],["2010/01/29",50.52244],["2010/02/26",54.16551],["2010/03/31",56.58808],["2010/04/30",55.32955],["2010/05/28",48.98428],["2010/06/30",45.8714],["2010/07/30",48.79666],["2010/08/31",39.58692],["2010/09/30",43.31396],["2010/10/29",43.28307],["2010/11/30",41.69798],["2010/12/31",41.86703],["2011/01/31",45.09645],["2011/02/28",42.86376],["2011/03/31",40.25047],["2011/04/29",39.66101],["2011/05/31",35.19997],["2011/06/30",34.27712],["2011/07/29",33.11886],["2011/08/31",23.48154],["2011/09/30",20.25203],["2011/10/31",24.05347],["2011/11/30",25.17633],["2011/12/30",23.20366],["2012/01/31",25.12671],["2012/02/29",22.72143],["2012/03/30",21.3928],["2012/04/30",22.23507],["2012/05/31",20.30368],["2012/06/29",18.00295],["2012/07/31",16.28886],["2012/08/31",15.06791],["2012/09/28",15.22859],["2012/10/31",12.34331],["2012/11/30",11.48928],["2012/12/31",12.60371],["2013/01/31",14.63898],["2013/02/28",17.77549],["2013/03/28",21.0411],["2013/04/30",18.00361],["2013/05/31",21.38152],["2013/06/28",21.71424],["2013/07/31",22.48997],["2013/08/30",19.56487],["2013/09/30",18.31419],["2013/10/31",21.11035],["2013/11/29",23.69176],["2013/12/31",24.24736],["2014/01/31",25.00256],["2014/02/28",25.70864],["2014/03/31",27.84242],["2014/04/30",28.1427],["2014/05/30",28.51725],["2014/06/30",28.61469],["2014/07/31",30.15174],["2014/08/29",32.17541],["2014/09/30",30.05374],["2014/10/31",29.95682],["2014/11/28",32.61186],["2014/12/31",33.41562],["2015/01/30",30.08488],["2015/02/27",28.81961],["2015/03/31",25.71269],["2015/04/30",27.04822],["2015/05/29",27.40099],["2015/06/30",24.6119],["2015/07/31",24.95513],["2015/08/31",22.90832],["2015/09/30",20.90813],["2015/10/30",22.01028],["2015/11/30",22.46978],["2015/12/31",21.21549]]
+	},{
+		"Name": "Sony",
+		"Annual Revenue": [["2002/3/31",60.71196],["2003/3/31",61.24567],["2004/3/31",66.50743],["2005/3/31",66.98903],["2006/3/31",66.34736],["2007/3/31",70.95704],["2008/3/31",77.66333],["2009/3/31",76.81802],["2010/3/31",77.65047],["2011/3/31",83.78485],["2012/3/31",82.17207],["2013/3/31",81.85044],["2014/3/31",77.49974],["2015/3/31",74.80178]],
+		"Annual Income": [["2002/3/31",0.12224],["2003/3/31",0.9468],["2004/3/31",0.7852],["2005/3/31",1.52659],["2006/3/31",1.09187],["2007/3/31",1.08027],["2008/3/31",3.23416],["2009/3/31",-0.98321],["2010/3/31",-0.43919],["2011/3/31",-3.02861],["2012/3/31",-5.75865],["2013/3/31",0.50034],["2014/3/31",-1.28083],["2015/3/31",-1.14699]],
+		"Shareholder Equity": [["2001/12/31",18.12009],["2002/3/31",17.8801],["2002/6/30",19.432],["2002/9/30",19.26047],["2002/12/31",20.75327],["2003/3/31",19.15186],["2003/6/30",19.418],["2003/9/30",20.55643],["2003/12/31",21.89797],["2004/3/31",22.69705],["2004/6/30",22.43436],["2004/9/30",22.7899],["2004/12/31",25.57912],["2005/3/31",26.75452],["2005/6/30",26.32209],["2005/9/30",26.57349],["2005/12/31",27.95133],["2006/3/31",27.25578],["2006/6/30",27.52421],["2006/9/30",27.43821],["2006/12/31",29.07535],["2007/3/31",28.61229],["2007/6/30",28.82407],["2007/9/30",30.51593],["2007/12/31",32.42313],["2008/3/31",34.85654],["2008/6/30",33.86498],["2008/9/30",32.57732],["2008/12/31",35.32355],["2009/3/31",30.18964],["2009/6/30",30.86272],["2009/9/30",32.0127],["2009/12/31",32.43011],["2010/3/31",31.83326],["2010/6/30",32.4953],["2010/9/30",34.37152],["2010/12/31",35.8113],["2011/3/31",30.78004],["2011/6/30",31.10112],["2011/9/30",30.90369],["2011/12/31",28.68417],["2012/3/31",24.66047],["2012/6/30",24.30363],["2012/9/30",24.16372],["2012/12/31",23.33395],["2013/3/31",23.27489],["2013/6/30",22.9116],["2013/9/30",23.00274],["2013/12/31",23.06686],["2014/3/31",22.02674],["2014/6/30",22.26708],["2014/9/30",20.90273],["2014/12/31",20.6704],["2015/3/31",19.36845],["2015/6/30",19.43938],["2015/9/30",22.0638],["2015/12/31",23.06855]],
+		"Market Capitalization": [["2001/12/31",41.423],["2002/01/31",41.11072],["2002/02/28",42.43331],["2002/03/28",47.70961],["2002/04/30",50.01663],["2002/05/31",53.62484],["2002/06/28",49.00153],["2002/07/31",41.83125],["2002/08/30",40.15172],["2002/09/30",37.92774],["2002/10/31",39.90256],["2002/11/29",40.92689],["2002/12/31",38.0449],["2003/01/31",36.79239],["2003/02/28",34.96889],["2003/03/31",32.51131],["2003/04/30",22.89581],["2003/05/30",25.302],["2003/06/30",25.9128],["2003/07/31",28.87426],["2003/08/29",30.49381],["2003/09/30",32.13174],["2003/10/31",32.50108],["2003/11/28",31.71625],["2003/12/31",32.07273],["2004/01/30",37.60475],["2004/02/27",37.87302],["2004/03/31",38.73355],["2004/04/30",35.57446],["2004/05/28",34.15704],["2004/06/30",35.2554],["2004/07/30",32.04969],["2004/08/31",32.06819],["2004/09/30",31.82887],["2004/10/29",32.25462],["2004/11/30",33.65216],["2004/12/31",36.05234],["2005/01/31",34.25712],["2005/02/28",34.96966],["2005/03/31",39.86361],["2005/04/29",36.56654],["2005/05/31",37.12436],["2005/06/30",34.30524],["2005/07/29",32.38279],["2005/08/31",33.48844],["2005/09/30",33.0746],["2005/10/31",32.68595],["2005/11/30",36.88132],["2005/12/30",40.65814],["2006/01/31",48.7867],["2006/02/28",46.77138],["2006/03/31",46.11325],["2006/04/28",48.98594],["2006/05/31",45.21241],["2006/06/30",44.09311],["2006/07/31",46.04546],["2006/08/31",43.46235],["2006/09/29",40.40867],["2006/10/31",41.03299],["2006/11/30",39.46096],["2006/12/29",42.88538],["2007/01/31",46.39176],["2007/02/28",51.79896],["2007/03/30",50.5573],["2007/04/30",53.36984],["2007/05/31",57.819],["2007/06/29",51.47595],["2007/07/31",52.87164],["2007/08/31",47.89926],["2007/09/28",48.17996],["2007/10/31",49.60744],["2007/11/30",54.13088],["2007/12/31",54.46974],["2008/01/31",47.64849],["2008/02/29",47.35758],["2008/03/31",46.73093],["2008/04/30",53.40178],["2008/05/30",58.76645],["2008/06/30",49.08481],["2008/07/31",42.27309],["2008/08/29",42.86785],["2008/09/30",34.64216],["2008/10/31",26.07981],["2008/11/28",21.74814],["2008/12/31",24.5424],["2009/01/30",21.56859],["2009/02/27",18.58355],["2009/03/31",23.15088],["2009/04/30",29.01996],["2009/05/29",29.43517],["2009/06/30",25.97729],["2009/07/31",28.08681],["2009/08/31",26.86128],["2009/09/30",29.33243],["2009/10/30",29.5233],["2009/11/30",26.81105],["2009/12/31",29.10165],["2010/01/29",33.34648],["2010/02/26",34.22956],["2010/03/31",38.45534],["2010/04/30",34.34086],["2010/05/28",30.88871],["2010/06/30",26.80229],["2010/07/30",31.3631],["2010/08/31",28.11829],["2010/09/30",31.06172],["2010/10/29",33.99511],["2010/11/30",35.64267],["2010/12/31",35.83781],["2011/01/31",34.46291],["2011/02/28",36.97186],["2011/03/31",31.94411],["2011/04/29",28.41149],["2011/05/31",26.83587],["2011/06/30",26.48408],["2011/07/29",25.18948],["2011/08/31",22.02825],["2011/09/30",19.06807],["2011/10/31",21.04512],["2011/11/30",18.11466],["2011/12/30",18.10463],["2012/01/31",18.28524],["2012/02/29",21.46659],["2012/03/30",20.84437],["2012/04/30",16.28519],["2012/05/31",13.30141],["2012/06/29",14.30605],["2012/07/31",12.19342],["2012/08/31",11.35042],["2012/09/28",11.74181],["2012/10/31",11.78215],["2012/11/30",9.77497],["2012/12/31",11.24038],["2013/01/31",14.99386],["2013/02/28",14.75423],["2013/03/28",17.60793],["2013/04/30",16.60911],["2013/05/31",20.36966],["2013/06/28",21.421],["2013/07/31",21.2698],["2013/08/30",20.178],["2013/09/30",22.3298],["2013/10/31",17.89912],["2013/11/29",18.98863],["2013/12/31",17.94102],["2014/01/31",16.34303],["2014/02/28",18.21081],["2014/03/31",19.95518],["2014/04/30",18.41053],["2014/05/30",16.88676],["2014/06/30",17.50258],["2014/07/31",19.23509],["2014/08/29",19.9448],["2014/09/30",20.72218],["2014/10/31",22.76683],["2014/11/28",25.25946],["2014/12/31",23.51347],["2015/01/30",26.75274],["2015/02/27",32.5306],["2015/03/31",31.29891],["2015/04/30",35.33107],["2015/05/29",36.1375],["2015/06/30",33.19116],["2015/07/31",33.14439],["2015/08/31",32.38798],["2015/09/30",30.89906],["2015/10/30",35.81769],["2015/11/30",32.69009],["2015/12/31",31.03793]]
+	},{
+		"Name": "Cisco",
+		"Annual Revenue": [["2002/7/31",18.915],["2003/7/31",18.878],["2004/7/31",22.045],["2005/7/31",24.801],["2006/7/31",28.484],["2007/7/31",34.922],["2008/7/31",39.54],["2009/7/31",36.117],["2010/7/31",40.04],["2011/7/31",43.218],["2012/7/31",46.061],["2013/7/31",48.607],["2014/7/31",47.142],["2015/7/31",49.161]],
+		"Annual Income": [["2002/7/31",1.893],["2003/7/31",3.578],["2004/7/31",4.401],["2005/7/31",5.741],["2006/7/31",5.58],["2007/7/31",7.333],["2008/7/31",8.052],["2009/7/31",6.134],["2010/7/31",7.767],["2011/7/31",6.49],["2012/7/31",8.041],["2013/7/31",9.983],["2014/7/31",7.853],["2015/7/31",8.981]],
+		"Shareholder Equity": [["2002/1/31",28.143],["2002/4/30",28.419],["2002/7/31",28.656],["2002/10/31",28.546],["2003/1/31",28.455],["2003/4/30",27.645],["2003/7/31",28.029],["2003/10/31",27.419],["2004/1/31",27.636],["2004/4/30",25.981],["2004/7/31",25.826],["2004/10/31",24.589],["2005/1/31",23.751],["2005/4/30",23.756],["2005/7/31",23.174],["2005/10/31",21.437],["2006/1/31",22.964],["2006/4/30",24.615],["2006/7/31",23.912],["2006/10/31",25.529],["2007/1/31",26.582],["2007/4/30",28.518],["2007/7/31",31.48],["2007/10/31",33.872],["2008/1/31",32.812],["2008/4/30",33.138],["2008/7/31",34.353],["2008/10/31",35.035],["2009/1/31",36.783],["2009/4/30",37.256],["2009/7/31",38.647],["2009/10/31",40.002],["2010/1/31",41.512],["2010/4/30",43.83],["2010/7/31",44.267],["2010/10/31",44.675],["2011/1/31",45.641],["2011/4/30",47.163],["2011/7/31",47.226],["2011/10/31",47.188],["2012/1/31",49.246],["2012/4/30",51.357],["2012/7/31",51.286],["2012/10/31",52.686],["2013/1/31",55.515],["2013/4/30",56.788],["2013/7/31",59.12],["2013/10/31",58.897],["2014/1/31",56.069],["2014/4/30",55.787],["2014/7/31",56.654],["2014/10/31",56.708],["2015/1/31",57.718],["2015/4/30",58.823],["2015/7/31",59.698],["2015/10/31",59.977]],
+		"Market Capitalization": [["2001/12/31",132.83525],["2002/01/31",145.233],["2002/02/28",104.47787],["2002/03/28",123.95307],["2002/04/30",107.25265],["2002/05/31",115.45555],["2002/06/28",102.06621],["2002/07/31",96.32657],["2002/08/30",100.6912],["2002/09/30",76.35628],["2002/10/31",80.86494],["2002/11/29",107.79899],["2002/12/31",94.64924],["2003/01/31",95.5955],["2003/02/28",99.42387],["2003/03/31",92.31201],["2003/04/30",105.27],["2003/05/30",115.1776],["2003/06/30",117.84473],["2003/07/31",136.39102],["2003/08/29",133.94172],["2003/09/30",136.2288],["2003/10/31",144.68909],["2003/11/28",156.70577],["2003/12/31",167.26788],["2004/01/30",177.48482],["2004/02/27",159.17313],["2004/03/31",161.99096],["2004/04/30",141.9789],["2004/05/28",151.25452],["2004/06/30",160.2473],["2004/07/30",141.45036],["2004/08/31",126.3486],["2004/09/30",120.37294],["2004/10/29",127.75493],["2004/11/30",123.46385],["2004/12/31",127.21715],["2005/01/31",116.91724],["2005/02/28",112.60205],["2005/03/31",115.64011],["2005/04/29",111.63246],["2005/05/31",123.97912],["2005/06/30",121.9341],["2005/07/29",122.38145],["2005/08/31",111.55222],["2005/09/30",112.44267],["2005/10/31",107.3873],["2005/11/30",107.74027],["2005/12/30",105.1604],["2006/01/31",114.24264],["2006/02/28",124.48734],["2006/03/31",133.28264],["2006/04/28",128.85424],["2006/05/31",120.13901],["2006/06/30",119.22331],["2006/07/31",108.33492],["2006/08/31",133.23741],["2006/09/29",139.23582],["2006/10/31",146.27606],["2006/11/30",163.41686],["2006/12/29",165.9674],["2007/01/31",160.99776],["2007/02/28",156.67849],["2007/03/30",154.20208],["2007/04/30",161.88396],["2007/05/31",162.97368],["2007/06/29",168.6039],["2007/07/31",176.351],["2007/08/31",194.712],["2007/09/28",202.0924],["2007/10/31",201.07092],["2007/11/30",169.99642],["2007/12/31",164.2322],["2008/01/31",146.3875],["2008/02/29",145.38872],["2008/03/31",143.60043],["2008/04/30",151.58368],["2008/05/30",157.96864],["2008/06/30",137.51312],["2008/07/31",129.58707],["2008/08/29",141.72665],["2008/09/30",132.94608],["2008/10/31",104.71861],["2008/11/28",96.84314],["2008/12/31",95.43791],["2009/01/30",87.65065],["2009/02/27",85.04534],["2009/03/31",97.88678],["2009/04/30",112.77117],["2009/05/29",106.70579],["2009/06/30",107.57097],["2009/07/31",127.32785],["2009/08/31",124.956],["2009/09/30",136.28172],["2009/10/30",131.18031],["2009/11/30",134.61049],["2009/12/31",137.71689],["2010/01/29",128.84298],["2010/02/26",139.30473],["2010/03/31",149.03831],["2010/04/30",154.19138],["2010/05/28",132.27026],["2010/06/30",121.70463],["2010/07/30",131.75626],["2010/08/31",113.01518],["2010/09/30",122.31738],["2010/10/29",127.67924],["2010/11/30",106.19931],["2010/12/31",112.13007],["2011/01/31",117.02295],["2011/02/28",102.59958],["2011/03/31",94.80511],["2011/04/29",96.85047],["2011/05/31",92.40311],["2011/06/30",85.85789],["2011/07/29",87.83795],["2011/08/31",85.16645],["2011/09/30",83.43425],["2011/10/31",99.52463],["2011/11/30",100.2061],["2011/12/30",97.19562],["2012/01/31",105.65081],["2012/02/29",107.07245],["2012/03/30",113.91259],["2012/04/30",108.49437],["2012/05/31",87.47783],["2012/06/29",91.97761],["2012/07/31",84.5031],["2012/08/31",101.08584],["2012/09/28",101.25036],["2012/10/31",91.0571],["2012/11/30",100.39789],["2012/12/31",104.32355],["2013/01/31",109.49411],["2013/02/28",111.19832],["2013/03/28",111.41159],["2013/04/30",111.1898],["2013/05/31",128.87866],["2013/06/28",130.05442],["2013/07/31",137.90451],["2013/08/30",125.61759],["2013/09/30",126.16337],["2013/10/31",120.71856],["2013/11/29",113.61562],["2013/12/31",119.92463],["2014/01/31",113.73481],["2014/02/28",112.29793],["2014/03/31",115.46597],["2014/04/30",118.23076],["2014/05/30",126.12062],["2014/06/30",127.29884],["2014/07/31",128.84961],["2014/08/29",127.62393],["2014/09/30",128.34694],["2014/10/31",125.01723],["2014/11/28",141.33958],["2014/12/31",142.23445],["2015/01/30",134.64605],["2015/02/27",150.64084],["2015/03/31",140.50793],["2015/04/30",146.83119],["2015/05/29",149.0674],["2015/06/30",139.6585],["2015/07/31",144.5157],["2015/08/31",131.5998],["2015/09/30",132.85895],["2015/10/30",146.6157],["2015/11/30",138.32316],["2015/12/31",137.84093]]
+	}
+];
+var selector = document.getElementById("selector");
+var chart = new MotionChart(document.getElementById("chart"));
+function update() {
+    var axes = selector.options[selector.selectedIndex].value.split(",").map(function (text) { return text.trim(); });
+    chart.reset();
+    chart.data(data, "Name", axes[0], axes[1], axes[2], axes[3]);
+    chart.time(new Date("2002/12/31"), new Date("2015/12/31"));
+    chart.select("Apple");
+    chart.select("Google");
+    chart.select("Microsoft");
+    chart.draw();
+    chart.startTransition();
+}
+update();
+selector.addEventListener("change", function() {
+    update();
+});
+</script>

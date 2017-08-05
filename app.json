@@ -1,0 +1,48 @@
+{
+  "name": "Lutz Roeder",
+  "bio": "Software Architect at <a href='https://www.microsoft.com'>Microsoft</a>, created <a href='https://en.wikipedia.org/wiki/.NET_Reflector'>.NET Reflector</a>.",
+  "description": "Software Architect at Microsoft working on Visual Studio. Created .NET Reflector. Interested in Developer Tools, Artificial Intelligence and Music production.",
+  "host": "https://www.lutzroeder.com",
+  "feeds": [
+    { "type": "application/rss+xml", "url": "http://feeds.feedburner.com/lutzroeder" }
+  ],
+  "links": [
+    { "name": "GitHub",     "symbol": "&#xe237;", "url": "http://www.github.com/lutzroeder" },
+    { "name": "LinkedIn",   "symbol": "&#xe252;", "url": "https://www.linkedin.com/in/lutzroeder" },
+    { "name": "SlideShare", "symbol": "&#xe276;", "url": "http://www.slideshare.net/lutzroeder/presentations" },
+    { "name": "Twitter",    "symbol": "&#xe286;", "url": "http://www.twitter.com/lutzroeder" },
+    { "name": "500px",      "symbol": "&#xe200;", "url": "http://www.500px.com/lutzroeder" },
+    { "name": "SoundCloud", "symbol": "&#xe278;", "url": "http://www.soundcloud.com/lutzroeder" },
+    { "name": "Facebook",   "symbol": "&#xe227;", "url": "http://www.facebook.com/lutzroeder" },
+    { "name": "Feed",       "symbol": "&#xe271;", "url": "http://feeds.feedburner.com/lutzroeder" }
+  ],
+  "pages": [
+    { "name": "Blog",  "url": "{{/}}" },
+    { "name": "Web",   "url": "{{/}}web" },
+    { "name": ".NET",  "url": "{{/}}dotnet" },
+    { "name": "iOS",   "url": "{{/}}ios" },
+    { "name": "AI",    "url": "{{/}}ai" }
+  ],
+  "redirects": [
+    { "pattern": "/.git/?*",             "target": "/" },
+    { "pattern": "/.vscode/?*",          "target": "/" },
+    { "pattern": "/admin*",              "target": "/" },
+    { "pattern": "/app.*",               "target": "/" },
+    { "pattern": "/build.js",            "target": "/" },
+    { "pattern": "/header.html",         "target": "/" },
+    { "pattern": "/meta.html",           "target": "/" },
+    { "pattern": "/package.json",        "target": "/" },
+    { "pattern": "/site.css",            "target": "/" },
+    { "pattern": "/blog/post.*",         "target": "/" },
+    { "pattern": "/blog/feed.html",      "target": "/" },
+    { "pattern": "/build.js",            "target": "/" },
+    { "pattern": "/apple/?*",            "target": "/ios" },
+    { "pattern": "/html5/grapher/?*",    "target": "/blog/2013-02-23-wealth-of-tech-companies/" },
+    { "pattern": "/html5/?*",            "target": "/web" },
+    { "pattern": "/silverlight/?*",      "target": "/dotnet" },
+    { "pattern": "/paper/?*",            "target": "/" },
+    { "pattern": "/feeds/posts/default", "target": "http://feeds.feedburner.com/lutzroeder" },
+    { "pattern": "/feeds/posts",         "target": "http://feeds.feedburner.com/lutzroeder" },
+    { "pattern": "/feeds",               "target": "http://feeds.feedburner.com/lutzroeder" }
+  ]
+}
