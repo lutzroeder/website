@@ -1,0 +1,132 @@
+---
+state:      post
+title:      TensorFlow on Azure
+date:       2016-12-27 15:15:00 -08:00
+updated:    2019-11-31 21:37:00 -08:00
+---
+
+<p>
+Training neural networks (deep learning) is compute-intensive. Fast GPUs can make those sessions, which sometimes
+take hours or days go orders of magnitude faster. However, laptops usually don't come with the fastest GPUs and having 
+to maintain a desktop machine only to occasionally run deep learning tasks is extra hassle.
+</p>
+
+<p>
+Cloud providers now offer virtual machines (VMs) with GPUs which run in data centers and can be used by anybody on an hourly basis.
+Below is a quick tutorial that walks through setting up a VM in Microsoft Azure with the necessary drivers
+to train neural networks using <a target="_blank" href="https://www.tensorflow.org">TensorFlow</a>.
+</p>
+
+<p>
+First, if you haven't done so already, create an <a target="_blank" href="https://azure.microsoft.com/en-us/free">Azure</a> account, install the <a target="_blank" href="https://docs.microsoft.com/en-us/cli/azure/install-azure-cli">Azure CLI</a>
+and follow the login procedure running <code>az login</code>.
+</p>
+
+<p>
+Azure manages resources (virtual machines, storage etc.) via resource groups. 
+GPU virtual machine instances are available in the East US region. If you already have a group for that region feel free to use it, otherwise create a new resource group:
+<pre>az group create -n <b>ai</b> -l <b>EastUS</b></pre>
+</p>
+
+<p>
+We will connect to the machine via SSH and need to create a key pair:
+<pre>ssh-keygen -f <b>~/.ssh/az_ai_id_rsa</b> -t rsa -b 2048 -C '' -N ''</pre>
+</p>
+
+<p>
+Next, we create the actual virtual machine running Ubuntu with the cheapest and least powerful GPU size (<a target="_blank" href="https://azure.microsoft.com/en-us/blog/azure-n-series-preview-availability">NC6</a>).
+<pre>az vm <b>create</b> -g ai -n <b>ai</b> --image Canonical:UbuntuServer:18.04-LTS:latest --size <b>Standard_NC6</b> --admin-username ai --ssh-key-value ~/.ssh/az_ai_id_rsa.pub</pre>
+</p>
+
+<p>
+Once completed, the command will print the IP address for the newly created machine:
+<pre>{
+  "<b>publicIpAddress</b>": "<b>127.0.0.1</b>",
+  "resourceGroup": "ai"
+}
+</pre>
+</p>
+
+<p>
+The VM is now running in a data center (and charging for cycles). 
+The following commands can be used to deallocate and restart anytime:
+<pre>az vm <b>deallocate</b> -g ai -n ai
+az vm <b>start</b> -g ai -n ai</pre>
+</p>
+
+<p>
+Connect to the machine via SSH (type 'yes', if asked to continue):
+<pre>ssh ai@$(az vm show -d -g ai -n ai --query "publicIps" --o tsv) -i ~/.ssh/az_ai_id_rsa</pre>
+</p>
+
+<h2>Install CUDA 10</h2>
+
+<p>
+Next, download <a target="_blank" href="http://www.nvidia.com/object/cuda_home_new.html">CUDA</a>, make it known to apt-get and run install:
+<pre>wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/cuda-repo-ubuntu1804_10.0.130-1_amd64.deb
+sudo dpkg -i cuda-repo-ubuntu1804_10.0.130-1_amd64.deb
+sudo apt-key adv --fetch-keys http://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub
+sudo apt-get update
+sudo apt-get install -y cuda=10.0.130-1
+rm cuda-repo-ubuntu1804_*_amd64.deb
+</pre>
+</p>
+
+<p>
+Now we can check the status of the GPU(s) by running <code>nvidia-smi</code>.
+</p>
+
+<h2>Install cuDNN 7.6.5</h2>
+<p>
+Next, download and install <a target="_blank" href="https://developer.nvidia.com/cudnn">cuDNN</a>...
+<pre>wget http://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64/nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
+sudo dpkg -i nvidia-machine-learning-repo-ubuntu1804_1.0.0-1_amd64.deb
+sudo apt-get update
+sudo apt-get install -y libcudnn7=7.6.5.32-1+cuda10.0
+sudo apt-get install -y libcudnn7-dev=7.6.5.32-1+cuda10.0
+rm nvidia-machine-learning-repo-ubuntu1804_*_amd64.deb
+sudo ldconfig
+</pre>
+</p>
+
+<h2>Environment variables</h2>
+
+<p>
+...and add the following exports to <code>~/.bashrc</code>:
+<pre>export LD_LIBRARY_PATH=/usr/local/cuda-10.0:${LD_LIBRARY_PATH}
+</pre>
+</p>
+
+<h2>Install TensorFlow</h2>
+
+<p>
+The final step is to install Pip and the GPU version of TensorFlow:
+<pre>sudo apt-get install -y <b>python3-dev</b> <b>python3-pip</b>
+sudo pip3 install <b>tensorflow-gpu</b></pre>
+</p>
+
+<p>
+We can now start a Python console and create a TensorFlow session:
+<pre>python3
+>>> import tensorflow as tf
+>>> session = tf.Session()</pre>
+</p>
+
+<p>
+If everything went well, it will recognize the Tesla K80 GPU:
+<pre>Created TensorFlow device (/job:localhost/replica:0/task:0/device:GPU:0 with 10804 MB memory)
+-> physical GPU (device: 0, name: Tesla K80, pci bus id: 8a8f:00:00.0, compute capability: 3.7)
+</pre>
+</p>
+
+<p>
+Remember to deallocate the VM when done to avoid using cycles:
+<pre>az vm <b>deallocate</b> -g ai -n ai</pre>
+</p>
+
+<p>
+Once no longer needed, you can delete the virtual machine by running:
+<pre>az vm <b>delete</b> -g ai -n ai
+az group <b>delete</b> -n ai</pre>
+
+</p>

@@ -1,0 +1,3 @@
+tools/* linguist-vendored=false
+deploy/* linguist-vendored=true
+content/* linguist-vendored=true

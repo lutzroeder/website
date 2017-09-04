@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "node",
+            "type": "node",
+            "request": "launch",
+            "program": "${workspaceRoot}/tools/generator.js",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            "name": "go",
+            "type": "go",
+            "request": "launch",
+            "mode": "debug",
+            "program": "${workspaceRoot}/tools/generator.go",
+            "cwd": "${workspaceRoot}"
+        },
+        {
+            "name": "python",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceRoot}/tools/generator.py",
+            "cwd": "${workspaceRoot}",
+            "debugOptions": [
+                "WaitOnAbnormalExit",
+                "WaitOnNormalExit",
+                "RedirectOutput"
+            ],
+        }
+    ]
+}
