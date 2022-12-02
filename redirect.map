@@ -213,3 +213,15 @@
 /blog/rss.xml                                        https://feeds.feedburner.com/lutzroeder      301
 http://blog.lutzroeder.com/*                         https://www.lutzroeder.com/:splat            301!
 https://blog.lutzroeder.com/*                        https://www.lutzroeder.com/:splat            301!
+http://lutzroeder.net/*                              https://www.lutzroeder.com/:splat            301!
+http://www.lutzroeder.net/*                          https://www.lutzroeder.com/:splat            301!
+http://blog.lutzroeder.net/*                         https://www.lutzroeder.com/:splat            301!
+https://lutzroeder.net/*                             https://www.lutzroeder.com/:splat            301!
+https://www.lutzroeder.net/*                         https://www.lutzroeder.com/:splat            301!
+https://blog.lutzroeder.net/*                        https://www.lutzroeder.com/:splat            301!
+http://lutzroeder.org/*                              https://www.lutzroeder.com/:splat            301!
+http://www.lutzroeder.org/*                          https://www.lutzroeder.com/:splat            301!
+http://blog.lutzroeder.org/*                         https://www.lutzroeder.com/:splat            301!
+https://lutzroeder.org/*                             https://www.lutzroeder.com/:splat            301!
+https://www.lutzroeder.org/*                         https://www.lutzroeder.com/:splat            301!
+https://blog.lutzroeder.org/*                        https://www.lutzroeder.com/:splat            301!

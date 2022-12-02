@@ -1,16 +1,16 @@
 {
   "name":        "Lutz Roeder",
-  "bio":         "Working on <a href=\"https://www.microsoft.com/visualstudio\">Visual Studio</a>. Creator of <a href=\"https://www.lutzroeder.com/projects\">Netron</a>.",
-  "description": "Software Architect at Microsoft. Working on Visual Studio. Creator of the Netron AI visualizer",
+  "bio":         "<a href=\"https://netron.app\">AI</a> and <a href=\"https://visualstudio.microsoft.com\">developer</a> <a href=\"https://github.com/features/copilot\">tools</a>",
+  "description": "Software Architect at Microsoft. Developer of the Netron AI visualizer. Working on GitHub Copilot and Visual Studio.",
   "host":        "https://www.lutzroeder.com",
-  "analytics":   "<script type=\"text/javascript\">(function(i,s,o,g,r,a,m){i[\"GoogleAnalyticsObject\"]=r;i[r]=i[r]||function(){ (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o), m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m) })(window,document,\"script\",\"https://www.google-analytics.com/analytics.js\",\"ga\");ga(\"create\", \"UA-54146-4\",\"auto\");ga(\"send\",\"pageview\");</script>",
+  "analytics":   "<script async src=\"https://www.googletagmanager.com/gtag/js?id=G-13B0KBB52H\"></script><script>window.dataLayer = window.dataLayer || []; function gtag() { dataLayer.push(arguments); }; gtag('js', new Date()); gtag('config', 'G-13B0KBB52H');</script>",
   "feeds": [
     { "type": "application/rss+xml", "url": "https://feeds.feedburner.com/lutzroeder" }
   ],
   "links": [
-    { "name": "Twitter",  "symbol": "&#xe286;", "url": "https://www.twitter.com/lutzroeder" },
     { "name": "GitHub",   "symbol": "&#xe237;", "url": "https://github.com/lutzroeder" },
-    { "name": "LinkedIn", "symbol": "&#xe252;", "url": "https://www.linkedin.com/in/lutzroeder" },
+    { "name": "LinkedIn", "symbol": "&#xe252;", "url": "https://linkedin.com/in/lutzroeder" },
+    { "name": "X",        "symbol": "&#xe286;", "url": "https://x.com/lutzroeder" },
     { "name": "RSS",      "symbol": "&#xe271;", "url": "https://feeds.feedburner.com/lutzroeder" }
   ],
   "pages": [
